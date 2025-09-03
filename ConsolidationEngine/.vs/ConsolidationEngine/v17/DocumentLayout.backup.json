@@ -1,0 +1,121 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\NICOLASD\\PERSONAL\\CC SISTEMAS\\OFIMATICA\\MARISTAS\\Consolidacion\\DatabaseConsolidationEngine\\ConsolidationEngine\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{DE74E276-D186-2FFB-3248-B99CDE7E769A}|ConsolidationEngine.csproj|d:\\nicolasd\\personal\\cc sistemas\\ofimatica\\maristas\\consolidacion\\databaseconsolidationengine\\consolidationengine\\changetracking\\changetrackingetl.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{DE74E276-D186-2FFB-3248-B99CDE7E769A}|ConsolidationEngine.csproj|solutionrelative:changetracking\\changetrackingetl.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{DE74E276-D186-2FFB-3248-B99CDE7E769A}|ConsolidationEngine.csproj|d:\\nicolasd\\personal\\cc sistemas\\ofimatica\\maristas\\consolidacion\\databaseconsolidationengine\\consolidationengine\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{DE74E276-D186-2FFB-3248-B99CDE7E769A}|ConsolidationEngine.csproj|solutionrelative:appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{DE74E276-D186-2FFB-3248-B99CDE7E769A}|ConsolidationEngine.csproj|d:\\nicolasd\\personal\\cc sistemas\\ofimatica\\maristas\\consolidacion\\databaseconsolidationengine\\consolidationengine\\config\\consolidationsettings.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{DE74E276-D186-2FFB-3248-B99CDE7E769A}|ConsolidationEngine.csproj|solutionrelative:config\\consolidationsettings.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{DE74E276-D186-2FFB-3248-B99CDE7E769A}|ConsolidationEngine.csproj|d:\\nicolasd\\personal\\cc sistemas\\ofimatica\\maristas\\consolidacion\\databaseconsolidationengine\\consolidationengine\\orchestrator\\consolidationorchestrator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{DE74E276-D186-2FFB-3248-B99CDE7E769A}|ConsolidationEngine.csproj|solutionrelative:orchestrator\\consolidationorchestrator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{DE74E276-D186-2FFB-3248-B99CDE7E769A}|ConsolidationEngine.csproj|d:\\nicolasd\\personal\\cc sistemas\\ofimatica\\maristas\\consolidacion\\databaseconsolidationengine\\consolidationengine\\worker.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{DE74E276-D186-2FFB-3248-B99CDE7E769A}|ConsolidationEngine.csproj|solutionrelative:worker.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{DE74E276-D186-2FFB-3248-B99CDE7E769A}|ConsolidationEngine.csproj|d:\\nicolasd\\personal\\cc sistemas\\ofimatica\\maristas\\consolidacion\\databaseconsolidationengine\\consolidationengine\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{DE74E276-D186-2FFB-3248-B99CDE7E769A}|ConsolidationEngine.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 3,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "ConsolidationSettings.cs",
+              "DocumentMoniker": "D:\\NICOLASD\\PERSONAL\\CC SISTEMAS\\OFIMATICA\\MARISTAS\\Consolidacion\\DatabaseConsolidationEngine\\ConsolidationEngine\\Config\\ConsolidationSettings.cs",
+              "RelativeDocumentMoniker": "Config\\ConsolidationSettings.cs",
+              "ToolTip": "D:\\NICOLASD\\PERSONAL\\CC SISTEMAS\\OFIMATICA\\MARISTAS\\Consolidacion\\DatabaseConsolidationEngine\\ConsolidationEngine\\Config\\ConsolidationSettings.cs",
+              "RelativeToolTip": "Config\\ConsolidationSettings.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAAA+AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-03T21:44:39.219Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "ConsolidationOrchestrator.cs",
+              "DocumentMoniker": "D:\\NICOLASD\\PERSONAL\\CC SISTEMAS\\OFIMATICA\\MARISTAS\\Consolidacion\\DatabaseConsolidationEngine\\ConsolidationEngine\\Orchestrator\\ConsolidationOrchestrator.cs",
+              "RelativeDocumentMoniker": "Orchestrator\\ConsolidationOrchestrator.cs",
+              "ToolTip": "D:\\NICOLASD\\PERSONAL\\CC SISTEMAS\\OFIMATICA\\MARISTAS\\Consolidacion\\DatabaseConsolidationEngine\\ConsolidationEngine\\Orchestrator\\ConsolidationOrchestrator.cs",
+              "RelativeToolTip": "Orchestrator\\ConsolidationOrchestrator.cs",
+              "ViewState": "AgIAABIAAAAAAAAAAAAowAwAAABAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-02T16:20:14.813Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "D:\\NICOLASD\\PERSONAL\\CC SISTEMAS\\OFIMATICA\\MARISTAS\\Consolidacion\\DatabaseConsolidationEngine\\ConsolidationEngine\\appsettings.json",
+              "RelativeDocumentMoniker": "appsettings.json",
+              "ToolTip": "D:\\NICOLASD\\PERSONAL\\CC SISTEMAS\\OFIMATICA\\MARISTAS\\Consolidacion\\DatabaseConsolidationEngine\\ConsolidationEngine\\appsettings.json",
+              "RelativeToolTip": "appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAAaAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2025-09-02T16:15:55.629Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "ChangeTrackingETL.cs",
+              "DocumentMoniker": "D:\\NICOLASD\\PERSONAL\\CC SISTEMAS\\OFIMATICA\\MARISTAS\\Consolidacion\\DatabaseConsolidationEngine\\ConsolidationEngine\\ChangeTracking\\ChangeTrackingETL.cs",
+              "RelativeDocumentMoniker": "ChangeTracking\\ChangeTrackingETL.cs",
+              "ToolTip": "D:\\NICOLASD\\PERSONAL\\CC SISTEMAS\\OFIMATICA\\MARISTAS\\Consolidacion\\DatabaseConsolidationEngine\\ConsolidationEngine\\ChangeTracking\\ChangeTrackingETL.cs",
+              "RelativeToolTip": "ChangeTracking\\ChangeTrackingETL.cs",
+              "ViewState": "AgIAADUAAAAAAAAAAAAqwEYAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-02T16:18:31.334Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "Worker.cs",
+              "DocumentMoniker": "D:\\NICOLASD\\PERSONAL\\CC SISTEMAS\\OFIMATICA\\MARISTAS\\Consolidacion\\DatabaseConsolidationEngine\\ConsolidationEngine\\Worker.cs",
+              "RelativeDocumentMoniker": "Worker.cs",
+              "ToolTip": "D:\\NICOLASD\\PERSONAL\\CC SISTEMAS\\OFIMATICA\\MARISTAS\\Consolidacion\\DatabaseConsolidationEngine\\ConsolidationEngine\\Worker.cs",
+              "RelativeToolTip": "Worker.cs",
+              "ViewState": "AgIAAAUAAAAAAAAAAAAqwBcAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-02T16:13:28.54Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "Program.cs",
+              "DocumentMoniker": "D:\\NICOLASD\\PERSONAL\\CC SISTEMAS\\OFIMATICA\\MARISTAS\\Consolidacion\\DatabaseConsolidationEngine\\ConsolidationEngine\\Program.cs",
+              "RelativeDocumentMoniker": "Program.cs",
+              "ToolTip": "D:\\NICOLASD\\PERSONAL\\CC SISTEMAS\\OFIMATICA\\MARISTAS\\Consolidacion\\DatabaseConsolidationEngine\\ConsolidationEngine\\Program.cs",
+              "RelativeToolTip": "Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABkAAAAWAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-02T16:13:27.159Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
