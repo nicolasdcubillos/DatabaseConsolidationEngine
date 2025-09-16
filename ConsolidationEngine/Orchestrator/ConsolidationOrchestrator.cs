@@ -31,6 +31,8 @@ namespace ConsolidationEngine.Orchestrator
                             server: _settings.Server,
                             originDb: dbPair.Origin,
                             targetDb: dbPair.Target,
+                            originConnectionString: dbPair.OriginConnectionString,
+                            targetConnectionString: dbPair.TargetConnectionString,
                             table: table.Name,
                             keyCol: table.KeyColumn,
                             batchSize: _settings.BatchSize,

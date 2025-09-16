@@ -18,6 +18,8 @@ namespace ConsolidationEngine.Config
     {
         public string Origin { get; set; }
         public string Target { get; set; }
+        public string OriginConnectionString { get; set; }
+        public string TargetConnectionString { get; set; }
     }
 
     public class TableConfig
