@@ -1,2 +1,7 @@
-# DatabaseConsolidationEngine
-Database consolidation engine using SQL Replication Pub/Sub model.
+# Database Consolidation Engine
+
+![Texto alternativo](DatabaseConsolidationEngine.png)
+
+## Publish the service
+
+dotnet publish -c Release -r win-x64 --self-contained true -o ./publish
