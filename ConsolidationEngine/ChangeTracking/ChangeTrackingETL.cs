@@ -34,16 +34,6 @@ namespace ConsolidationEngine.ChangeTracking
             long toVersion = _repository.GetCurrentVersion(cnxOrigin);
             long fromVersion = _repository.GetWatermark(cnxTarget);
 
-            if (fromVersion == 0)
-            {
-                _repository.SetWatermark(cnxTarget, toVersion);
-                _logger.LogInformation(
-                    "[INIT] Watermark inicial seteado a {Version}. No se movieron datos.",
-                    toVersion
-                );
-                return;
-            }
-
             long minValidVersion = _repository.GetMinValidVersion(cnxOrigin);
             if (fromVersion < minValidVersion)
             {
