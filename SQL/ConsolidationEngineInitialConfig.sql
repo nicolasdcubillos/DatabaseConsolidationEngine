@@ -8,7 +8,7 @@ INSERT INTO @tables VALUES ('dbo', 'MVTONIIF'),
 
 DECLARE @db SYSNAME, @schema SYSNAME, @table SYSNAME, @sql NVARCHAR(MAX);
 
--- Primero asegurar que la tabla de watermark existe en CONSOLIDADA
+-- Primero asegurar que las tablas de control existen en CONSOLIDADA
 IF OBJECT_ID('CONSOLIDADA.dbo.ConsolidationEngineWatermark', 'U') IS NULL
 BEGIN
     USE CONSOLIDADA;
@@ -19,6 +19,24 @@ BEGIN
         SourceDB SYSNAME NOT NULL,
         TableName SYSNAME NOT NULL,
         LastVersion BIGINT NOT NULL,
+        CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+    );
+END;
+
+IF OBJECT_ID('CONSOLIDADA.dbo.ConsolidationEngineErrors', 'U') IS NULL
+BEGIN
+    USE CONSOLIDADA;
+
+    CREATE TABLE dbo.ConsolidationEngineErrors (
+        Id INT IDENTITY(1,1) PRIMARY KEY,
+        SourceKey NVARCHAR(200) NULL,
+        SourceDatabase NVARCHAR(200) NULL,
+        TableName NVARCHAR(200) NOT NULL,
+        Operation NVARCHAR(50) NOT NULL, -- BULK | ROW
+        ErrorMessage NVARCHAR(500) NOT NULL,
+        ErrorDetails NVARCHAR(MAX) NULL,
+        Payload NVARCHAR(MAX) NULL,
+        RetryCount INT NOT NULL DEFAULT 0,
         CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
     );
 END;
@@ -78,3 +96,37 @@ END
 
 CLOSE cur;
 DEALLOCATE cur;
+
+DECLARE curCons CURSOR FOR
+SELECT SchemaName, TableName FROM @tables;
+
+OPEN curCons;
+FETCH NEXT FROM curCons INTO @schema, @table;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    SET @sql = '
+    IF NOT EXISTS (
+        SELECT 1
+        FROM CONSOLIDADA.INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = ''' + @schema + '''
+          AND TABLE_NAME = ''' + @table + '''
+          AND COLUMN_NAME = ''SourceKey''
+    )
+    BEGIN
+        ALTER TABLE CONSOLIDADA.' + QUOTENAME(@schema) + '.' + QUOTENAME(@table) + '
+        ADD SourceKey VARCHAR(1000) NULL;
+        PRINT ''Columna SourceKey agregada a ' + @schema + '.' + @table + ''';
+    END
+    ELSE
+    BEGIN
+        PRINT ''La columna SourceKey ya existe en ' + @schema + '.' + @table + ''';
+    END';
+
+    EXEC sp_executesql @sql;
+
+    FETCH NEXT FROM curCons INTO @schema, @table;
+END
+
+CLOSE curCons;
+DEALLOCATE curCons;

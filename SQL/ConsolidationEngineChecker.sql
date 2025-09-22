@@ -5,7 +5,7 @@ DECLARE @tables TABLE (SchemaName SYSNAME, TableName SYSNAME);
 INSERT INTO @tables VALUES ('dbo', 'MVTONIIF'),
                            ('dbo', 'NIT'),
                            ('dbo', 'CENTCOS'),
-                           ('dbo', 'MVTOAUXNIF');   -- <-- agregada si aplica
+                           ('dbo', 'MVTOAUXNIF'); 
 
 DECLARE @db SYSNAME, @schema SYSNAME, @table SYSNAME;
 DECLARE @sql NVARCHAR(MAX);

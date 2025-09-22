@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace ConsolidationEngine.Config
+﻿namespace ConsolidationEngine.Config
 {
     public class ConsolidationSettings
     {
         public string Server { get; set; }
         public int BatchSize { get; set; }
+        public string User { get; set; }
+        public string Password { get; set; }
         public List<DatabasePairConfig> Databases { get; set; } = new();
         public List<TableConfig> Tables { get; set; } = new();
     }
@@ -18,8 +14,6 @@ namespace ConsolidationEngine.Config
     {
         public string Origin { get; set; }
         public string Target { get; set; }
-        public string OriginConnectionString { get; set; }
-        public string TargetConnectionString { get; set; }
     }
 
     public class TableConfig

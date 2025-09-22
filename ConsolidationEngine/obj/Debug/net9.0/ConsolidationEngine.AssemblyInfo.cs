@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ConsolidationEngine")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8594b2fc8c0935565022184021a09913df815682")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0784e0fb17d5cfc04f3cd4140fa01d237ea9b7a9")]
 [assembly: System.Reflection.AssemblyProductAttribute("ConsolidationEngine")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ConsolidationEngine")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

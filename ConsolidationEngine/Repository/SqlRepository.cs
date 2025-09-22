@@ -8,218 +8,150 @@ using System.Threading.Tasks;
 
 namespace ConsolidationEngine.Repository
 {
-    public class SqlRepository
+    public static class SqlRepository
     {
-        private readonly string _server;
-        private readonly string _originDb;
-        private readonly string _targetDb;
-        private readonly string _table;
-        private readonly string _keyCol;
-        private readonly int _batchSize;
-        private readonly ILogger _logger;
-
-        private readonly string _originConnectionString;
-        private readonly string _targetConnectionString;
-
-        public SqlRepository(
-            string server,
-            string originDb,
-            string targetDb,
-            string originConnectionString,
-            string targetConnectionString,
-            string table,
-            string keyCol,
-            int batchSize,
-            ILogger logger)
+        public static async Task InsertAsync(string tableName, Dictionary<string, object> data, string database, SqlTransaction? transaction = null)
         {
-            _server = server;
-            _originDb = originDb;
-            _targetDb = targetDb;
-            _originConnectionString = originConnectionString;
-            _targetConnectionString = targetConnectionString;
-            _table = table;
-            _keyCol = keyCol;
-            _batchSize = batchSize;
-            _logger = logger;
-        }
+            SqlConnection connection = SqlConnectionBuilder.Instance.CreateConnection(database);
+            bool disposeConnection = true;
+            await connection.OpenAsync();
+            string commandText = string.Empty;
 
-        public SqlConnection CreateOriginConnection() => new SqlConnection(_originConnectionString);
-        public SqlConnection CreateTargetConnection() => new SqlConnection(_targetConnectionString);
-
-        public long GetCurrentVersion(SqlConnection cnx)
-        {
-            using var cmd = new SqlCommand("SELECT CHANGE_TRACKING_CURRENT_VERSION()", cnx);
-            return (long)cmd.ExecuteScalar();
-        }
-
-        public long GetMinValidVersion(SqlConnection cnx)
-        {
-            using var cmd = new SqlCommand($"SELECT CHANGE_TRACKING_MIN_VALID_VERSION(OBJECT_ID('{_table}'))", cnx);
-            return (long)cmd.ExecuteScalar();
-        }
-
-        public void EnsureWatermarkRow(SqlConnection cnx)
-        {
-            var sql = @"
-            IF NOT EXISTS (SELECT 1 FROM dbo.ConsolidationEngineWatermark WHERE SourceServer=@server AND SourceDB=@db AND TableName=@table)
-            INSERT INTO dbo.ConsolidationEngineWatermark (SourceServer, SourceDB, TableName, LastVersion)
-            VALUES (@server, @db, @table, 0);";
-            using var cmd = new SqlCommand(sql, cnx);
-            cmd.Parameters.AddWithValue("@server", _server);
-            cmd.Parameters.AddWithValue("@db", _originDb);
-            cmd.Parameters.AddWithValue("@table", _table);
-            cmd.ExecuteNonQuery();
-        }
-
-        public long GetWatermark(SqlConnection cnx)
-        {
-            var sql = @"SELECT LastVersion FROM dbo.ConsolidationEngineWatermark WHERE SourceServer=@server AND SourceDB=@db AND TableName=@table";
-            using var cmd = new SqlCommand(sql, cnx);
-            cmd.Parameters.AddWithValue("@server", _server);
-            cmd.Parameters.AddWithValue("@db", _originDb);
-            cmd.Parameters.AddWithValue("@table", _table);
-
-            var result = cmd.ExecuteScalar();
-            return result != null ? Convert.ToInt64(result) : 0;
-        }
-
-        public void SetWatermark(SqlConnection cnx, long version)
-        {
-            var sql = @"UPDATE dbo.ConsolidationEngineWatermark SET LastVersion=@version WHERE SourceServer=@server AND SourceDB=@db AND TableName=@table";
-            using var cmd = new SqlCommand(sql, cnx);
-            cmd.Parameters.AddWithValue("@version", version);
-            cmd.Parameters.AddWithValue("@server", _server);
-            cmd.Parameters.AddWithValue("@db", _originDb);
-            cmd.Parameters.AddWithValue("@table", _table);
-            cmd.ExecuteNonQuery();
-        }
-
-        public DataTable FetchChanges(SqlConnection cnx, long fromVersion, long toVersion)
-        {
-            var sql = $@"
-                DECLARE @from BIGINT = @fromVersion;
-                DECLARE @min BIGINT = CHANGE_TRACKING_MIN_VALID_VERSION(OBJECT_ID('{_table}'));
-                IF @from < @min
-                    RAISERROR('WATERMARK_TOO_OLD', 16, 1);
-
-                SELECT ct.SYS_CHANGE_VERSION, ct.SYS_CHANGE_OPERATION, s.*
-                FROM CHANGETABLE(CHANGES {_table}, @from) AS ct
-                LEFT JOIN {_table} AS s ON s.{_keyCol} = ct.{_keyCol}
-                WHERE ct.SYS_CHANGE_VERSION <= {toVersion}
-                ORDER BY ct.SYS_CHANGE_VERSION, ct.{_keyCol};";
-
-            using var cmd = new SqlCommand(sql, cnx);
-            cmd.Parameters.AddWithValue("@fromVersion", fromVersion);
-
-            using var da = new SqlDataAdapter(cmd);
-            var dt = new DataTable();
-            da.Fill(dt);
-            return dt;
-        }
-
-        public void UpsertBatch(SqlConnection cnx, DataRow[] rows)
-        {
-            if (rows.Length == 0) return;
-
-            // Todas las columnas que no son de tracking
-            var allCols = rows[0].Table.Columns
-                .Cast<DataColumn>()
-                .Where(c => c.ColumnName != "SYS_CHANGE_VERSION" && c.ColumnName != "SYS_CHANGE_OPERATION")
-                .Select(c => c.ColumnName)
-                .ToList();
-
-            // Columnas sin la PK (para INSERT)
-            var insertCols = string.Join(",", allCols.Where(c => c != _keyCol));
-            var insertValues = string.Join(",", allCols.Where(c => c != _keyCol).Select(c => $"SRC.{c}"));
-
-            // Columnas completas (incluyendo PK) -> para crear #stage
-            var colsForStage = string.Join(",", allCols);
-
-            // Crear tabla temporal
-            using (var cmd = new SqlCommand($@"
-        IF OBJECT_ID('tempdb..#stage') IS NOT NULL DROP TABLE #stage;
-        SELECT TOP 0 {colsForStage} INTO #stage FROM {_table};", cnx))
+            try
             {
-                cmd.ExecuteNonQuery();
+                var columns = string.Join(", ", data.Keys);
+                var parameters = string.Join(", ", data.Keys.Select(k => "@" + k));
+                commandText = $"INSERT INTO {tableName} ({columns}) VALUES ({parameters})";
+
+                using SqlCommand command = transaction != null ? new SqlCommand(commandText, connection, transaction) : new SqlCommand(commandText, connection);
+
+                foreach (var kvp in data)
+                {
+                    var paramName = "@" + kvp.Key;
+                    var value = kvp.Value ?? DBNull.Value;
+
+                    if (DateTime.TryParse(value.ToString(), out DateTime dt))
+                    {
+                        command.Parameters.Add(paramName, SqlDbType.DateTime).Value = dt;
+                    }
+                    else
+                    {
+                        command.Parameters.AddWithValue(paramName, value);
+                    }
+                }
+
+                await command.ExecuteNonQueryAsync();
             }
-
-            // Copiar datos al DataTable temporal
-            var tempTable = new DataTable();
-            foreach (var colName in allCols)
-                tempTable.Columns.Add(colName, rows[0].Table.Columns[colName].DataType);
-
-            foreach (var row in rows)
+            catch (Exception ex)
             {
-                var newRow = tempTable.NewRow();
-                foreach (var colName in allCols)
-                    newRow[colName] = row[colName] ?? DBNull.Value;
-                tempTable.Rows.Add(newRow);
+                var paramInfo = string.Join(", ", data.Select(kvp => $"@{kvp.Key} = {kvp.Value ?? "NULL"}"));
+                var errorMsg = $"[InsertAsync] Error al ejecutar1\nSQL: {commandText}\nParams: {paramInfo}\nTabla: {tableName}\nError: {ex.Message}";
+                throw new Exception(errorMsg, ex);
             }
-
-            // Bulk insert hacia #stage
-            using (var bulkCopy = new SqlBulkCopy(cnx) { DestinationTableName = "#stage", BatchSize = _batchSize })
+            finally
             {
-                bulkCopy.WriteToServer(tempTable);
+                if (disposeConnection && connection?.State == ConnectionState.Open)
+                {
+                    await connection.CloseAsync();
+                    connection?.Dispose();
+                }
             }
-
-            // Clause para el UPDATE
-            var setClause = string.Join(",", allCols.Where(c => c != _keyCol).Select(c => $"TARGET.{c}=SRC.{c}"));
-
-            // Merge (sin IDENTITY_INSERT y sin meter la PK en el insert)
-            var mergeSql = $@"
-            MERGE {_table} AS TARGET
-            USING #stage AS SRC
-            ON TARGET.{_keyCol} = SRC.{_keyCol}
-            WHEN MATCHED THEN
-                UPDATE SET {setClause}
-            WHEN NOT MATCHED BY TARGET THEN
-                INSERT ({insertCols})
-                VALUES ({insertValues});";
-
-            using (var cmd = new SqlCommand(mergeSql, cnx))
-            {
-                cmd.ExecuteNonQuery();
-            }
-
-            _logger.LogInformation("[UPSERT] {Count} filas procesadas en {Table}", rows.Length, _table);
         }
 
-
-        public void DeleteBatch(SqlConnection cnx, DataRow[] rows)
+        public static async Task<List<Dictionary<string, object>>> SelectAsync(string tableName, string database, string? whereClause = null, SqlTransaction? transaction = null)
         {
-            if (rows.Length == 0) return;
+            SqlConnection connection = SqlConnectionBuilder.Instance.CreateConnection(database);
+            bool disposeConnection = true;
+            await connection.OpenAsync();
 
-            using var cmd = new SqlCommand("", cnx);
-
-            var keys = new List<string>();
-            foreach (var row in rows)
+            string query = string.Empty;
+            try
             {
-                keys.Add(row[_keyCol].ToString());
+                query = $"SELECT * FROM {tableName}";
+                if (!string.IsNullOrWhiteSpace(whereClause))
+                    query += $" WHERE {whereClause}";
+
+                using SqlCommand command = transaction != null ? new SqlCommand(query, connection, transaction) : new SqlCommand(query, connection);
+
+                using var reader = await command.ExecuteReaderAsync();
+
+                var results = new List<Dictionary<string, object>>();
+
+                while (await reader.ReadAsync())
+                {
+                    var row = new Dictionary<string, object>();
+
+                    for (int i = 0; i < reader.FieldCount; i++)
+                    {
+                        row[reader.GetName(i)] = reader.IsDBNull(i) ? null! : reader.GetValue(i);
+                    }
+
+                    results.Add(row);
+                }
+
+                return results;
             }
-
-            var sql = @"
-            IF OBJECT_ID('tempdb..#del') IS NOT NULL DROP TABLE #del;
-            CREATE TABLE #del (k NVARCHAR(40) NOT NULL);";
-
-            cmd.CommandText = sql;
-            cmd.ExecuteNonQuery();
-
-            using var bulkCopy = new SqlBulkCopy(cnx)
+            catch (Exception ex)
             {
-                DestinationTableName = "#del",
-                BatchSize = _batchSize
-            };
-            var dtKeys = new DataTable();
-            dtKeys.Columns.Add("k", typeof(string));
-            foreach (var k in keys)
-                dtKeys.Rows.Add(k);
+                var errorMsg = $"[SelectAsync] Error al ejecutar:\nSQL: {query}\nTabla: {tableName}\nError: {ex.Message}";
+                throw new Exception(errorMsg, ex);
+            }
+            finally
+            {
+                if (disposeConnection && connection?.State == ConnectionState.Open)
+                {
+                    await connection.CloseAsync();
+                    connection?.Dispose();
+                }
+            }
+        }
 
-            bulkCopy.WriteToServer(dtKeys);
+        public static async Task UpdateAsync(string tableName, Dictionary<string, object> data, string whereClause, string database, SqlTransaction? transaction = null)
+        {
+            SqlConnection connection = SqlConnectionBuilder.Instance.CreateConnection(database);
+            bool disposeConnection = true;
+            await connection.OpenAsync();
 
-            cmd.CommandText = $"DELETE T FROM {_table} T INNER JOIN #del D ON T.{_keyCol}=D.k;";
-            cmd.ExecuteNonQuery();
+            string commandText = string.Empty;
+            try
+            {
+                var setClause = string.Join(", ", data.Keys.Select(k => $"{k} = @{k}"));
+                commandText = $"UPDATE {tableName} SET {setClause} WHERE {whereClause}";
 
-            _logger.LogInformation("[DELETE] {Count} filas eliminadas en {Table}", rows.Length, _table);
+                using SqlCommand command = transaction != null ? new SqlCommand(commandText, connection, transaction) : new SqlCommand(commandText, connection);
+
+                foreach (var kvp in data)
+                {
+                    var paramName = "@" + kvp.Key;
+                    var value = kvp.Value ?? DBNull.Value;
+
+                    if (DateTime.TryParse(value.ToString(), out DateTime dt) && dt.Year >= 2000 && dt.Year <= 2100)
+                    {
+                        command.Parameters.Add(paramName, SqlDbType.DateTime).Value = dt;
+                    }
+                    else
+                    {
+                        command.Parameters.AddWithValue(paramName, value);
+                    }
+                }
+
+
+                await command.ExecuteNonQueryAsync();
+            }
+            catch (Exception ex)
+            {
+                var paramInfo = string.Join(", ", data.Select(kvp => $"@{kvp.Key} = {kvp.Value ?? "NULL"}"));
+                var errorMsg = $"[UpdateAsync] Error al ejecutar:\nSQL: {commandText}\nParams: {paramInfo}\nTabla: {tableName}\nError: {ex.Message}";
+                throw new Exception(errorMsg, ex);
+            }
+            finally
+            {
+                if (disposeConnection && connection?.State == ConnectionState.Open)
+                {
+                    await connection.CloseAsync();
+                    connection?.Dispose();
+                }
+            }
         }
     }
 }

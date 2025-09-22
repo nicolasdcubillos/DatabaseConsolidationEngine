@@ -1,15 +1,16 @@
-USE PASTO;
+USE BOGOTA;
 GO
 
 DECLARE @lote INT = 1;
-DECLARE @totalLotes INT = 100; -- 20 lotes de 500 = 10,000
+DECLARE @totalLotes INT = 5; 
+DECLARE @cantidadLote INT = 5; 
 DECLARE @i INT;
 
 WHILE @lote <= @totalLotes
 BEGIN
     SET @i = 1;
 
-    WHILE @i <= 500
+    WHILE @i <= @cantidadLote
     BEGIN
         INSERT INTO dbo.MVTONIIF
         (
@@ -23,10 +24,10 @@ BEGIN
         VALUES
         (
             500000.00,                                 -- BASE
-            'CHQ' + RIGHT('000000' + CAST(((@lote-1)*500 + @i) AS VARCHAR(6)), 6), -- CHEQUE único
+            'NICO' + RIGHT('000000' + CAST(((@lote-1)*500 + @i) AS VARCHAR(6)), 6), -- CHEQUE único
             'CC001',                                   -- CODCC
             'CMP01',                                   -- CODCOMPROB
-            '0',                                -- CODIGOCTA (existe en CUENTASNIF)
+            '222001',                                -- CODIGOCTA (existe en CUENTASNIF)
             'COP',                                     -- CODMONEDA
             'IVA19',                                   -- CODTRIBUTA
             0.00,                                      -- CREDITO
@@ -35,7 +36,7 @@ BEGIN
             0.00,                                      -- DBMONEXT
             0.00,                                      -- DBMULTIM
             'FAC-2025-' + CAST(((@lote-1)*500 + @i) AS VARCHAR(6)), -- DCTO único
-            500000.00,                                 -- DEBITO
+            1200000.00,                                 -- DEBITO
             'Compra de materia prima',                 -- DESCRIPCIO
             'Detalle del movimiento ' + CAST(((@lote-1)*500 + @i) AS VARCHAR(6)), -- DETALLE único
             GETDATE(),                                 -- FECHAMVTO
