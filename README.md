@@ -4,7 +4,9 @@ This repository contains DatabaseConsolidationEngine, a database consolidation e
 
 The engine is responsible for detecting changes across a configurable number of databases and replicating the updated data into a single, centralized database. It ensures data consistency and integrity by following predefined replication rules and handling versioning appropriately.
 
-This project is ideal for scenarios that require consolidating information from multiple SQL Server instances without impacting the performance of the source databases. It provides reliable, consistent replication, ensuring that the centralized database always reflects the correct state of all source databases.
+This project is ideal for scenarios that require consolidating information from multiple SQL Server instances without impacting the performance of the source databases. It provides reliable, consistent replication, ensuring that the centralized database always reflects the correct state of all source databases. The use of Change Tracking combined with merge strategies and staging tables enhances efficiency and performance, making it well-suited for high-transaction environments where data integrity is critical.
+
+Below is an example of a solution diagram in a production environment, where the system is integrated into a Colombian ERP for a medium-sized company. In this setup, 25 databases are replicated into a single database, handling thousands of transactions per minute (real-time billing nationwide).
 
 ![Texto alternativo](DatabaseConsolidationEngine.png)
 
