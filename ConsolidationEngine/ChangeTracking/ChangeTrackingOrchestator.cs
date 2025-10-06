@@ -1,4 +1,5 @@
 ﻿using ConsolidationEngine.Config;
+using System.Threading.Tasks;
 
 namespace ConsolidationEngine.ChangeTracking
 {
@@ -13,39 +14,43 @@ namespace ConsolidationEngine.ChangeTracking
             _logger = logger;
         }
 
-        public void RunAll()
+        public async Task RunAll()
         {
+            var tasks = new List<Task>();
             foreach (var dbPair in _settings.Databases)
             {
                 _logger.LogInformation("[ORCHESTATOR] Checkeando {origen} -> {destino}", dbPair.Origin, dbPair.Target);
                 foreach (var table in _settings.Tables)
                 {
-                    try
+                    tasks.Add(Task.Run(() =>
                     {
-                        ChangeTrackingETL etl = new ChangeTrackingETL(
-                            server: _settings.Server,
-                            originDb: dbPair.Origin,
-                            targetDb: dbPair.Target,
-                            user: _settings.User,
-                            password: _settings.Password,
-                            table: table.Name,
-                            keyCol: table.KeyColumn,
-                            batchSize: _settings.BatchSize,
-                            logger: _logger
-                        );
-
-                        etl.Run();
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(
-                            ex,
-                            "[ORCHESTATOR] {Origin}.{Table} -> {Target} falló",
-                            dbPair.Origin, table.Name, dbPair.Target
-                        );
-                    }
+                        try
+                        {
+                            ChangeTrackingETL etl = new ChangeTrackingETL(
+                                server: _settings.Server,
+                                originDb: dbPair.Origin,
+                                targetDb: dbPair.Target,
+                                user: _settings.User,
+                                password: _settings.Password,
+                                table: table.Name,
+                                keyCol: table.KeyColumn,
+                                batchSize: _settings.BatchSize,
+                                logger: _logger
+                            );
+                            etl.Run();
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(
+                                ex,
+                                "[ORCHESTATOR] {Origin}.{Table} -> {Target} falló",
+                                dbPair.Origin, table.Name, dbPair.Target
+                            );
+                        }
+                    }));
                 }
             }
+            await Task.WhenAll(tasks);
         }
     }
 }

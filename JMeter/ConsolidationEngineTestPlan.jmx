@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
+  <hashTree>
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="Insert Load Test" enabled="true">
+      <stringProp name="TestPlan.comments"></stringProp>
+      <boolProp name="TestPlan.functional_mode">false</boolProp>
+      <boolProp name="TestPlan.tearDown_on_shutdown">true</boolProp>
+      <elementProp name="TestPlan.user_defined_variables" elementType="Arguments">
+        <collectionProp name="Arguments.arguments"/>
+      </elementProp>
+      <stringProp name="TestPlan.serialize_threadgroups">false</stringProp>
+    </TestPlan>
+    <hashTree>
+
+      <!-- JDBC Connection to PASTO -->
+      <ConfigTestElement guiclass="TestBeanGUI" testclass="ConfigTestElement" testname="JDBC Connection - PASTO" enabled="true">
+        <stringProp name="dataSource">PASTO_DB</stringProp>
+        <stringProp name="dbUrl">jdbc:sqlserver://NICOLASD\\MARISTAS;databaseName=PASTO;encrypt=false;trustServerCertificate=true;</stringProp>
+        <stringProp name="driver">com.microsoft.sqlserver.jdbc.SQLServerDriver</stringProp>
+        <stringProp name="username">usuario_in</stringProp>
+        <stringProp name="password">tu_password</stringProp>
+      </ConfigTestElement>
+      <hashTree/>
+
+      <!-- JDBC Connection to BOGOTA -->
+      <ConfigTestElement guiclass="TestBeanGUI" testclass="ConfigTestElement" testname="JDBC Connection - BOGOTA" enabled="true">
+        <stringProp name="dataSource">BOGOTA_DB</stringProp>
+        <stringProp name="dbUrl">jdbc:sqlserver://NICOLASD\\MARISTAS;databaseName=BOGOTA;encrypt=false;trustServerCertificate=true;</stringProp>
+        <stringProp name="driver">com.microsoft.sqlserver.jdbc.SQLServerDriver</stringProp>
+        <stringProp name="username">usuario_in</stringProp>
+        <stringProp name="password">tu_password</stringProp>
+      </ConfigTestElement>
+      <hashTree/>
+
+      <!-- Thread Group -->
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Insert Threads" enabled="true">
+        <stringProp name="ThreadGroup.num_threads">10</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">5</stringProp>
+        <longProp name="ThreadGroup.start_time">1695897600000</longProp>
+        <longProp name="ThreadGroup.end_time">1695897600000</longProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <stringProp name="LoopController.loops">100</stringProp>
+        </elementProp>
+      </ThreadGroup>
+      <hashTree>
+
+        <!-- JDBC Request for PASTO -->
+        <JDBCSampler guiclass="TestBeanGUI" testclass="JDBCSampler" testname="Insert into CONSOLIDADA from PASTO" enabled="true">
+          <stringProp name="dataSource">PASTO_DB</stringProp>
+          <stringProp name="queryType">Update Statement</stringProp>
+          <stringProp name="query">
+            <![CDATA[
+INSERT INTO CONSOLIDADA.dbo.MVTONIIF
+(
+    BASE, CHEQUE, CODCC, CODCOMPROB, CODIGOCTA, CODMONEDA,
+    CODTRIBUTA, CREDITO, CRMONEXT, CRMULTIM,
+    DBMONEXT, DBMULTIM, DCTO, DEBITO, DESCRIPCIO, DETALLE,
+    FECHAMVTO, FECHAREAL, FECING, FECMOD,
+    NIIF, NIT, NITCONTRAT, NOTA, PASSWORDIN, PASSWORDMO,
+    REGISTRO, STADSINCRO, SUCURSAL, IDINTEGRA, CODIGOUEN
+)
+VALUES
+(
+    500000.00,
+    'NICO' + RIGHT('000000' + CAST((ABS(CHECKSUM(NEWID())) % 999999) AS VARCHAR(6)), 6),
+    'CC001',
+    'CMP01',
+    '222001',
+    'COP',
+    'IVA19',
+    0.00,0.00,0.00,0.00,0.00,
+    'FAC-2025-' + CAST((ABS(CHECKSUM(NEWID())) % 999999) AS VARCHAR(6)),
+    1200000.00,
+    'Compra de materia prima',
+    'Detalle del movimiento ' + CAST((ABS(CHECKSUM(NEWID())) % 999999) AS VARCHAR(6)),
+    GETDATE(),GETDATE(),GETDATE(),GETDATE(),
+    0,'900141348-7','',
+    'Sin observación',
+    'usuario_in','',
+    ABS(CHECKSUM(NEWID())) % 1000000,
+    0,1,NEWID(),'0'
+);
+            ]]>
+          </stringProp>
+        </JDBCSampler>
+        <hashTree/>
+
+        <!-- JDBC Request for BOGOTA -->
+        <JDBCSampler guiclass="TestBeanGUI" testclass="JDBCSampler" testname="Insert into CONSOLIDADA from BOGOTA" enabled="true">
+          <stringProp name="dataSource">BOGOTA_DB</stringProp>
+          <stringProp name="queryType">Update Statement</stringProp>
+          <stringProp name="query">
+            <![CDATA[
+-- Mismo INSERT que arriba apuntando a CONSOLIDADA
+INSERT INTO CONSOLIDADA.dbo.MVTONIIF
+(
+    BASE, CHEQUE, CODCC, CODCOMPROB, CODIGOCTA, CODMONEDA,
+    CODTRIBUTA, CREDITO, CRMONEXT, CRMULTIM,
+    DBMONEXT, DBMULTIM, DCTO, DEBITO, DESCRIPCIO, DETALLE,
+    FECHAMVTO, FECHAREAL, FECING, FECMOD,
+    NIIF, NIT, NITCONTRAT, NOTA, PASSWORDIN, PASSWORDMO,
+    REGISTRO, STADSINCRO, SUCURSAL, IDINTEGRA, CODIGOUEN
+)
+VALUES
+(
+    500000.00,
+    'NICO' + RIGHT('000000' + CAST((ABS(CHECKSUM(NEWID())) % 999999) AS VARCHAR(6)), 6),
+    'CC001',
+    'CMP01',
+    '222001',
+    'COP',
+    'IVA19',
+    0.00,0.00,0.00,0.00,0.00,
+    'FAC-2025-' + CAST((ABS(CHECKSUM(NEWID())) % 999999) AS VARCHAR(6)),
+    1200000.00,
+    'Compra de materia prima',
+    'Detalle del movimiento ' + CAST((ABS(CHECKSUM(NEWID())) % 999999) AS VARCHAR(6)),
+    GETDATE(),GETDATE(),GETDATE(),GETDATE(),
+    0,'900141348-7','',
+    'Sin observación',
+    'usuario_in','',
+    ABS(CHECKSUM(NEWID())) % 1000000,
+    0,1,NEWID(),'0'
+);
+            ]]>
+          </stringProp>
+        </JDBCSampler>
+        <hashTree/>
+
+      </hashTree>
+    </hashTree>
+  </hashTree>
+</jmeterTestPlan>

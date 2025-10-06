@@ -1,4 +1,5 @@
 ﻿using ConsolidationEngine.Repository;
+using Microsoft.Extensions.Logging;
 
 namespace ConsolidationEngine.Logger
 {
@@ -30,6 +31,29 @@ namespace ConsolidationEngine.Logger
             };
 
             SqlRepository.InsertAsync("ConsolidationEngineErrors", data, targetDatabase).GetAwaiter().GetResult();
+        }
+
+        public static void Log(
+            LogLevel level,
+            string message,
+            string sourceDatabase,
+            string targetDatabase,
+            string tableName = null,
+            string payload = null
+        )
+        {
+            var data = new Dictionary<string, object>
+            {
+                { "LogLevel", level.ToString() },
+                { "Message", message },
+                { "SourceDatabase", sourceDatabase },
+                { "TargetDatabase", targetDatabase },
+                { "TableName", (object?)tableName ?? DBNull.Value },
+                { "Payload", (object?)payload ?? DBNull.Value },
+                { "CreatedAt", DateTime.UtcNow }
+            };
+
+            SqlRepository.InsertAsync("ConsolidationEngineLogs", data, targetDatabase).GetAwaiter().GetResult();
         }
     }
 }

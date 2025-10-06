@@ -1,18 +1,11 @@
-DECLARE @dbs TABLE (DbName SYSNAME);
-INSERT INTO @dbs VALUES ('PASTO'), ('BOGOTA');
+USE CONSOLIDADA;
+GO
 
-DECLARE @tables TABLE (SchemaName SYSNAME, TableName SYSNAME);
-INSERT INTO @tables VALUES ('dbo', 'MVTONIIF'),
-                           ('dbo', 'NIT'),
-                           ('dbo', 'CENTCOS');
-
-DECLARE @db SYSNAME, @schema SYSNAME, @table SYSNAME, @sql NVARCHAR(MAX);
-
--- Primero asegurar que las tablas de control existen en CONSOLIDADA
+-------------------------------------------------------------------
+-- 1. Crear tablas de control si no existen
+-------------------------------------------------------------------
 IF OBJECT_ID('CONSOLIDADA.dbo.ConsolidationEngineWatermark', 'U') IS NULL
 BEGIN
-    USE CONSOLIDADA;
-
     CREATE TABLE dbo.ConsolidationEngineWatermark (
         Id INT IDENTITY(1,1) PRIMARY KEY,
         SourceServer SYSNAME NOT NULL,
@@ -25,8 +18,6 @@ END;
 
 IF OBJECT_ID('CONSOLIDADA.dbo.ConsolidationEngineErrors', 'U') IS NULL
 BEGIN
-    USE CONSOLIDADA;
-
     CREATE TABLE dbo.ConsolidationEngineErrors (
         Id INT IDENTITY(1,1) PRIMARY KEY,
         SourceKey NVARCHAR(200) NULL,
@@ -40,6 +31,101 @@ BEGIN
         CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
     );
 END;
+
+IF OBJECT_ID('CONSOLIDADA.dbo.ConsolidationEngineLogs', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.ConsolidationEngineLogs (
+        Id INT IDENTITY(1,1) PRIMARY KEY,
+        LogLevel NVARCHAR(50) NOT NULL,
+        Message NVARCHAR(MAX) NOT NULL,
+        SourceDatabase NVARCHAR(200) NULL,
+        TargetDatabase NVARCHAR(200) NULL,
+        TableName NVARCHAR(200) NULL,
+        Payload NVARCHAR(MAX) NULL,
+        CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+    );
+END;
+GO
+
+-------------------------------------------------------------------
+-- 2. Crear vistas de errores y estado de consolidación
+-------------------------------------------------------------------
+
+CREATE OR ALTER VIEW dbo.ConsolidationEngineErrorsView
+AS
+SELECT TOP (25)
+    ce.SourceDatabase,
+    ce.TableName,
+    ce.ErrorMessage,
+    ce.CreatedAt
+FROM CONSOLIDADA.dbo.ConsolidationEngineErrors ce
+ORDER BY ce.CreatedAt DESC;
+GO
+
+CREATE OR ALTER VIEW dbo.ConsolidationEngineStatus
+AS
+SELECT
+    w.SourceDB,
+    w.TableName,
+    w.LastVersion AS LocalVersion,
+    t.LastVersion AS ConsolidadaVersion,
+    Estado =
+        CASE
+            WHEN t.LastVersion IS NULL THEN 'Sin consolidar'
+            WHEN w.LastVersion = t.LastVersion THEN 'Sincronizada'
+            WHEN w.LastVersion < t.LastVersion THEN 'Desactualizada'
+            WHEN w.LastVersion > t.LastVersion THEN 'Pendiente'
+            ELSE 'Error'
+        END,
+    ISNULL(e.CantidadErrores, 0) AS Errores,
+    e.UltimoError
+FROM CONSOLIDADA.dbo.ConsolidationEngineWatermark w
+LEFT JOIN CONSOLIDADA.dbo.ConsolidationEngineWatermark t
+    ON t.SourceServer = w.SourceServer
+   AND t.SourceDB = w.SourceDB
+   AND t.TableName = w.TableName
+OUTER APPLY (
+    SELECT
+        COUNT(*) AS CantidadErrores,
+        MAX(CreatedAt) AS UltimoError
+    FROM CONSOLIDADA.dbo.ConsolidationEngineErrors ce
+    WHERE ce.SourceDatabase = w.SourceDB
+      AND ce.TableName = w.TableName
+) e;
+GO
+
+-------------------------------------------------------------------
+-- 3. Configurar bases y tablas a consolidar con Change Tracking
+-------------------------------------------------------------------
+DECLARE @dbs TABLE (DbName SYSNAME);
+
+INSERT INTO @dbs VALUES ('PASTO'), ('BOGOTA');
+
+INSERT INTO @dbs
+VALUES 
+    ('ADMCONCESIONES'),
+    ('AMADEUS'),
+    ('ARMENIA'),
+    ('BICENTENARIO'),
+    ('BICINDEPENDENCIA'),
+    ('CALI'),
+    ('COMDEPORCALI'),
+    ('IBAGUE'),
+    ('IPIALES'),
+    ('LAESPERANZA'),
+    ('LOSNARANJOS'),
+    ('MANIZALES'),
+    ('MARISTAS'),
+    ('POPAYAN'),
+    ('SOLACOSTA'),
+    ('VILLAVICENCIO');
+
+DECLARE @tables TABLE (SchemaName SYSNAME, TableName SYSNAME);
+INSERT INTO @tables VALUES ('dbo', 'MVTONIIF'),
+                           ('dbo', 'NIT'),
+                           ('dbo', 'CENTCOS');
+
+DECLARE @db SYSNAME, @schema SYSNAME, @table SYSNAME, @sql NVARCHAR(MAX);
 
 DECLARE cur CURSOR FOR 
     SELECT d.DbName, t.SchemaName, t.TableName
@@ -97,6 +183,9 @@ END
 CLOSE cur;
 DEALLOCATE cur;
 
+-------------------------------------------------------------------
+-- 4. Asegurar columna SourceKey en tablas CONSOLIDADA
+-------------------------------------------------------------------
 DECLARE curCons CURSOR FOR
 SELECT SchemaName, TableName FROM @tables;
 
@@ -116,11 +205,11 @@ BEGIN
     BEGIN
         ALTER TABLE CONSOLIDADA.' + QUOTENAME(@schema) + '.' + QUOTENAME(@table) + '
         ADD SourceKey VARCHAR(1000) NULL;
-        PRINT ''Columna SourceKey agregada a ' + @schema + '.' + @table + ''';
+        PRINT ''Columna SourceKey agregada a ' + @schema + '.' + @table + '''; 
     END
     ELSE
     BEGIN
-        PRINT ''La columna SourceKey ya existe en ' + @schema + '.' + @table + ''';
+        PRINT ''La columna SourceKey ya existe en ' + @schema + '.' + @table + '''; 
     END';
 
     EXEC sp_executesql @sql;
@@ -130,3 +219,4 @@ END
 
 CLOSE curCons;
 DEALLOCATE curCons;
+GO

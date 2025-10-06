@@ -18,7 +18,7 @@ namespace ConsolidationEngine.Repository
         private readonly string _keyCol;
         private readonly int _batchSize;
         private readonly ILogger _logger;
-        private readonly LoggerDecorator _loggerDecorator;
+        private readonly DualLogger _dualLogger;
 
         public SqlConsolidationHelper(
             string server,
@@ -36,7 +36,7 @@ namespace ConsolidationEngine.Repository
             _keyCol = keyCol;
             _batchSize = batchSize;
             _logger = logger;
-            _loggerDecorator = new LoggerDecorator(logger);
+            _dualLogger = new DualLogger(logger);
         }
 
         public long GetCurrentVersion(SqlConnection cnx)
@@ -222,11 +222,22 @@ namespace ConsolidationEngine.Repository
                         int rowCount = cmdRow.ExecuteNonQuery();
 
                         if (rowCount < 1)
+                        {
                             _logger.LogWarning("[UPSERT] Fila con SourceKey={Key} no afectada como se esperaba", row["SourceKey"]);
+                        }
+                        else
+                        {
+                            // Actualizar watermark con la versión de la fila procesada
+                            if (row.Table.Columns.Contains("SYS_CHANGE_VERSION") && row["SYS_CHANGE_VERSION"] != DBNull.Value)
+                            {
+                                long version = Convert.ToInt64(row["SYS_CHANGE_VERSION"]);
+                                SetWatermark(cnx, version);
+                            }
+                        }
                     }
                     catch (Exception exRow)
                     {
-                        _loggerDecorator.LogError(row["SourceKey"]?.ToString(), _originDb, _table, "IndividualMerge", exRow.GetType().ToString(), exRow.Message, "", "0", _targetDb);
+                        _dualLogger.LogError(row["SourceKey"]?.ToString(), _originDb, _table, "IndividualMerge", exRow.GetType().ToString(), exRow.Message, "", "0", _targetDb);
                     }
                 }
             }

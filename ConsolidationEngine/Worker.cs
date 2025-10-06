@@ -52,7 +52,7 @@ public class Worker : BackgroundService
                 try
                 {
                     _logger.LogInformation("ConsolidationEngine heartbeat at {time}", DateTimeOffset.Now);
-                    consolidationOrchestator.RunAll();
+                    await consolidationOrchestator.RunAll();
                 }
                 catch (Exception ex)
                 {
