@@ -22,6 +22,7 @@ namespace ConsolidationDashboard
             ApplyModernGridTheme(GeneralDashboard);
             ApplyModernGridTheme(DetalleErroresGrid);
             ApplyModernGridTheme(logsGrid);
+            UpdatePieChart();
         }
 
         private void ApplyModernGridTheme(DataGridView grid)
@@ -166,6 +167,35 @@ namespace ConsolidationDashboard
                     logsGrid.Rows.Add(row.Values.ToArray());
                 }
             }
+        }
+
+        private void UpdatePieChart()
+        {
+            int consolidadas = 0;
+            int noConsolidadas = 0;
+            string connStr = ConfigurationManager.ConnectionStrings["ConsolidationDb"].ConnectionString;
+            using (var conn = new SqlConnection(connStr))
+            using (var cmd = new SqlCommand("EXEC dbo.ConsolidationEngineStatus", conn))
+            {
+                conn.Open();
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        var estado = reader["Estado"].ToString().ToLower();
+                        if (estado.Contains("consolidada") || estado.Contains("ok"))
+                            consolidadas++;
+                        else
+                            noConsolidadas++;
+                    }
+                }
+            }
+            pieChart.Series["ConsolidationStatus"].Points.Clear();
+            pieChart.Series["ConsolidationStatus"].Points.AddXY("Consolidadas", consolidadas);
+            pieChart.Series["ConsolidationStatus"].Points.AddXY("No consolidadas", noConsolidadas);
+            pieChart.Series["ConsolidationStatus"].IsValueShownAsLabel = true;
+            pieChart.Series["ConsolidationStatus"].LabelForeColor = System.Drawing.Color.White;
+            pieChart.Series["ConsolidationStatus"].Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.BrightPastel;
         }
 
         private void DetalleErroresGrid_CellContentClick(object sender, DataGridViewCellEventArgs e)
