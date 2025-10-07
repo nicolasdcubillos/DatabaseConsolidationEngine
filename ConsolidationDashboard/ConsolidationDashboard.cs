@@ -19,6 +19,28 @@ namespace ConsolidationDashboard
             LoadSyncStatus();
             LoadErrorDetails();
             LoadLogs();
+            ApplyModernGridTheme(GeneralDashboard);
+            ApplyModernGridTheme(DetalleErroresGrid);
+            ApplyModernGridTheme(logsGrid);
+        }
+
+        private void ApplyModernGridTheme(DataGridView grid)
+        {
+            grid.EnableHeadersVisualStyles = false;
+            grid.BorderStyle = BorderStyle.None;
+            grid.BackgroundColor = System.Drawing.Color.White;
+            grid.GridColor = System.Drawing.Color.LightGray;
+            grid.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
+            grid.ColumnHeadersDefaultCellStyle.BackColor = System.Drawing.Color.FromArgb(44, 62, 80);
+            grid.ColumnHeadersDefaultCellStyle.ForeColor = System.Drawing.Color.White;
+            grid.ColumnHeadersDefaultCellStyle.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            grid.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            grid.DefaultCellStyle.BackColor = System.Drawing.Color.White;
+            grid.DefaultCellStyle.ForeColor = System.Drawing.Color.FromArgb(44, 62, 80);
+            grid.DefaultCellStyle.SelectionBackColor = System.Drawing.Color.FromArgb(52, 152, 219);
+            grid.DefaultCellStyle.SelectionForeColor = System.Drawing.Color.White;
+            grid.RowHeadersVisible = false;
+            grid.RowTemplate.Height = 30;
         }
 
         private void LoadSyncStatus()
