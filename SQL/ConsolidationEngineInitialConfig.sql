@@ -28,6 +28,7 @@ BEGIN
         ErrorDetails NVARCHAR(MAX) NULL,
         Payload NVARCHAR(MAX) NULL,
         RetryCount INT NOT NULL DEFAULT 0,
+        Retry BIT DEFAULT 0,
         CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
     );
 END;
@@ -54,6 +55,7 @@ GO
 CREATE OR ALTER VIEW dbo.ConsolidationEngineErrorsView
 AS
 SELECT TOP (25)
+    ce.Id,
     ce.SourceDatabase,
     ce.TableName,
     ce.ErrorMessage,
@@ -62,36 +64,75 @@ FROM CONSOLIDADA.dbo.ConsolidationEngineErrors ce
 ORDER BY ce.CreatedAt DESC;
 GO
 
-CREATE OR ALTER VIEW dbo.ConsolidationEngineStatus
+CREATE OR ALTER PROCEDURE dbo.ConsolidationEngineStatus
 AS
-SELECT
-    w.SourceDB,
-    w.TableName,
-    w.LastVersion AS LocalVersion,
-    t.LastVersion AS ConsolidadaVersion,
-    Estado =
-        CASE
-            WHEN t.LastVersion IS NULL THEN 'Sin consolidar'
-            WHEN w.LastVersion = t.LastVersion THEN 'Sincronizada'
-            WHEN w.LastVersion < t.LastVersion THEN 'Desactualizada'
-            WHEN w.LastVersion > t.LastVersion THEN 'Pendiente'
-            ELSE 'Error'
-        END,
-    ISNULL(e.CantidadErrores, 0) AS Errores,
-    e.UltimoError
-FROM CONSOLIDADA.dbo.ConsolidationEngineWatermark w
-LEFT JOIN CONSOLIDADA.dbo.ConsolidationEngineWatermark t
-    ON t.SourceServer = w.SourceServer
-   AND t.SourceDB = w.SourceDB
-   AND t.TableName = w.TableName
-OUTER APPLY (
-    SELECT
-        COUNT(*) AS CantidadErrores,
-        MAX(CreatedAt) AS UltimoError
-    FROM CONSOLIDADA.dbo.ConsolidationEngineErrors ce
-    WHERE ce.SourceDatabase = w.SourceDB
-      AND ce.TableName = w.TableName
-) e;
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @db sysname, @sql NVARCHAR(MAX);
+
+    -- tabla temporal para acumular resultados
+    CREATE TABLE #result (
+        SourceDB sysname,
+        LocalVersion bigint,
+        ConsolidadaVersion bigint,
+        Estado varchar(50),
+        Errores int,
+        UltimoError datetime2
+    );
+
+    DECLARE dbs CURSOR FOR
+    SELECT DISTINCT SourceDB
+    FROM CONSOLIDADA.dbo.ConsolidationEngineWatermark;
+
+    OPEN dbs;
+    FETCH NEXT FROM dbs INTO @db;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        SET @sql = N'
+        USE ' + QUOTENAME(@db) + N';
+        DECLARE @localVersion bigint = CHANGE_TRACKING_CURRENT_VERSION();
+        USE CONSOLIDADA;
+        INSERT INTO #result
+        SELECT
+            N''' + @db + N''' AS SourceDB,
+            @localVersion AS LocalVersion,
+            (SELECT MAX(LastVersion)
+             FROM CONSOLIDADA.dbo.ConsolidationEngineWatermark
+             WHERE SourceDB = N''' + @db + N''') AS ConsolidadaVersion,
+            CASE
+                WHEN (SELECT MAX(LastVersion)
+                      FROM CONSOLIDADA.dbo.ConsolidationEngineWatermark
+                      WHERE SourceDB = N''' + @db + N''') IS NULL THEN ''Sin consolidar''
+                WHEN @localVersion =
+                     (SELECT MAX(LastVersion)
+                      FROM CONSOLIDADA.dbo.ConsolidationEngineWatermark
+                      WHERE SourceDB = N''' + @db + N''') THEN ''Sincronizada''
+                WHEN @localVersion <
+                     (SELECT MAX(LastVersion)
+                      FROM CONSOLIDADA.dbo.ConsolidationEngineWatermark
+                      WHERE SourceDB = N''' + @db + N''') THEN ''Desactualizada''
+                WHEN @localVersion >
+                     (SELECT MAX(LastVersion)
+                      FROM CONSOLIDADA.dbo.ConsolidationEngineWatermark
+                      WHERE SourceDB = N''' + @db + N''') THEN ''Pendiente''
+                ELSE ''Error''
+            END AS Estado,
+            ISNULL((SELECT COUNT(*) FROM CONSOLIDADA.dbo.ConsolidationEngineErrors WHERE SourceDatabase = N''' + @db + N'''), 0) AS Errores,
+            (SELECT MAX(CreatedAt) FROM CONSOLIDADA.dbo.ConsolidationEngineErrors WHERE SourceDatabase = N''' + @db + N''') AS UltimoError;
+        ';
+
+        EXEC sys.sp_executesql @sql;
+
+        FETCH NEXT FROM dbs INTO @db;
+    END;
+
+    CLOSE dbs;
+    DEALLOCATE dbs;
+
+    SELECT * FROM #result;
+END;
 GO
 
 -------------------------------------------------------------------
@@ -100,7 +141,7 @@ GO
 DECLARE @dbs TABLE (DbName SYSNAME);
 
 INSERT INTO @dbs VALUES ('PASTO'), ('BOGOTA');
-
+/*
 INSERT INTO @dbs
 VALUES 
     ('ADMCONCESIONES'),
@@ -118,7 +159,7 @@ VALUES
     ('MARISTAS'),
     ('POPAYAN'),
     ('SOLACOSTA'),
-    ('VILLAVICENCIO');
+    ('VILLAVICENCIO');*/
 
 DECLARE @tables TABLE (SchemaName SYSNAME, TableName SYSNAME);
 INSERT INTO @tables VALUES ('dbo', 'MVTONIIF'),
