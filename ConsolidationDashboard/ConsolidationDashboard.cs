@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Windows.Forms;
 using System.Configuration;
 using System.Data.SqlClient;
+using System.Linq;
 
 namespace ConsolidationDashboard
 {
@@ -17,6 +18,7 @@ namespace ConsolidationDashboard
         {
             LoadSyncStatus();
             LoadErrorDetails();
+            LoadLogs();
         }
 
         private void LoadSyncStatus()
@@ -103,6 +105,44 @@ namespace ConsolidationDashboard
             foreach (var item in data)
             {
                 DetalleErroresGrid.Rows.Add(false, item.SourceDatabase, item.TableName, item.ErrorMessage, item.CreatedAt, item.ID);
+            }
+        }
+
+        private void LoadLogs()
+        {
+            string connStr = ConfigurationManager.ConnectionStrings["ConsolidationDb"].ConnectionString;
+            var data = new List<dynamic>();
+            using (var conn = new SqlConnection(connStr))
+            using (var cmd = new SqlCommand("SELECT * FROM dbo.ConsolidationEngineLogsView", conn))
+            {
+                conn.Open();
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        var row = new Dictionary<string, object>();
+                        for (int i = 0; i < reader.FieldCount; i++)
+                        {
+                            row[reader.GetName(i)] = reader.IsDBNull(i) ? null : reader.GetValue(i);
+                        }
+                        data.Add(row);
+                    }
+                }
+            }
+            logsGrid.DataSource = null;
+            logsGrid.Rows.Clear();
+            logsGrid.Columns.Clear();
+            if (data.Count > 0)
+            {
+                var firstRow = (Dictionary<string, object>)data[0];
+                foreach (var key in firstRow.Keys)
+                {
+                    logsGrid.Columns.Add(key, key);
+                }
+                foreach (Dictionary<string, object> row in data)
+                {
+                    logsGrid.Rows.Add(row.Values.ToArray());
+                }
             }
         }
 

@@ -64,6 +64,13 @@ FROM CONSOLIDADA.dbo.ConsolidationEngineErrors ce
 ORDER BY ce.CreatedAt DESC;
 GO
 
+CREATE OR ALTER VIEW dbo.ConsolidationEngineLogsView
+AS
+SELECT TOP (25) *
+FROM CONSOLIDADA.dbo.ConsolidationEngineLogs ce
+ORDER BY ce.CreatedAt DESC;
+GO
+
 CREATE OR ALTER PROCEDURE dbo.ConsolidationEngineStatus
 AS
 BEGIN
