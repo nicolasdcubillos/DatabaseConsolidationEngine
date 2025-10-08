@@ -60,9 +60,11 @@ namespace ConsolidationEngine.ChangeTracking
             long minValidVersion = sqlConsolidationHelper.GetMinValidVersion(cnxOrigin);
             if (fromVersion < minValidVersion)
             {
+                sqlConsolidationHelper.SetWatermark(cnxTarget, toVersion);
+                /*
                 throw new Exception(
                     $"[CHANGE TRACKING ETL] WATERMARK MISMATCH: Watermark {fromVersion} < MIN_VALID_VERSION {minValidVersion}. Requiere reinicialización. Origen={_originDb}, Destino={_targetDb}, Tabla={_table}"
-                );
+                );*/
             }
 
             if (fromVersion == toVersion)

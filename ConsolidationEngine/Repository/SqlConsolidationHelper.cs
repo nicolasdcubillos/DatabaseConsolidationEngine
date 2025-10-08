@@ -204,45 +204,86 @@ namespace ConsolidationEngine.Repository
                 {
                     try
                     {
-                        var singleMerge = $@"
-                        MERGE {_table} AS TARGET
-                        USING (SELECT {string.Join(",", allCols.Select(c => $"@{c} AS {c}"))}) AS SRC
-                        ON TARGET.SourceKey = SRC.SourceKey
-                        WHEN MATCHED THEN
-                            UPDATE SET {setClause}
-                        WHEN NOT MATCHED BY TARGET THEN
-                            INSERT ({insertCols})
-                            VALUES ({insertValues});";
-
-                        using var cmdRow = new SqlCommand(singleMerge, cnx);
-
-                        foreach (var col in allCols)
-                            cmdRow.Parameters.AddWithValue($"@{col}", row[col] ?? DBNull.Value);
-
-                        int rowCount = cmdRow.ExecuteNonQuery();
-
-                        if (rowCount < 1)
-                        {
-                            _logger.LogWarning("[UPSERT] Fila con SourceKey={Key} no afectada como se esperaba", row["SourceKey"]);
-                        }
-                        else
-                        {
-                            // Actualizar watermark con la versión de la fila procesada
-                            if (row.Table.Columns.Contains("SYS_CHANGE_VERSION") && row["SYS_CHANGE_VERSION"] != DBNull.Value)
-                            {
-                                long version = Convert.ToInt64(row["SYS_CHANGE_VERSION"]);
-                                SetWatermark(cnx, version);
-                            }
-                        }
+                        ExecuteSingleMerge(
+                            cnx: cnx,
+                            tableName: _table,
+                            allCols: allCols,
+                            setClause: setClause,
+                            insertCols: insertCols,
+                            insertValues: insertValues,
+                            row: row,
+                            onWatermarkUpdated: version => SetWatermark(cnx, version),
+                            logger: _logger
+                        );
                     }
                     catch (Exception exRow)
                     {
-                        _dualLogger.LogError(row["SourceKey"]?.ToString(), _originDb, _table, "IndividualMerge", exRow.GetType().ToString(), exRow.Message, "", "0", _targetDb);
+                        _dualLogger.LogError(
+                            row["SourceKey"]?.ToString(),
+                            _originDb,
+                            _table,
+                            "IndividualMerge",
+                            exRow.GetType().ToString(),
+                            exRow.Message,
+                            "",
+                            "0",
+                            _targetDb
+                        );
                     }
                 }
             }
 
             return rowsAffected;
+        }
+
+        public static void ExecuteSingleMerge(
+           SqlConnection cnx,
+           string tableName,
+           IEnumerable<string> allCols,
+           string setClause,
+           string insertCols,
+           string insertValues,
+           DataRow row,
+           Action<long>? onWatermarkUpdated,
+           ILogger logger)
+        {
+            var singleMerge = $@"
+            MERGE {tableName} AS TARGET
+            USING (SELECT {string.Join(",", allCols.Select(c => $"@{c} AS {c}"))}) AS SRC
+            ON TARGET.SourceKey = SRC.SourceKey
+            WHEN MATCHED THEN
+                UPDATE SET {setClause}
+            WHEN NOT MATCHED BY TARGET THEN
+                INSERT ({insertCols})
+                VALUES ({insertValues});";
+
+            try
+            {
+                using var cmdRow = new SqlCommand(singleMerge, cnx);
+
+                foreach (var col in allCols)
+                    cmdRow.Parameters.AddWithValue($"@{col}", row[col] ?? DBNull.Value);
+
+                int rowCount = cmdRow.ExecuteNonQuery();
+
+                if (rowCount < 1)
+                {
+                    logger.LogWarning("[UPSERT] Fila con SourceKey={Key} no afectada como se esperaba", row["SourceKey"]);
+                }
+                else
+                {
+                    if (row.Table.Columns.Contains("SYS_CHANGE_VERSION") && row["SYS_CHANGE_VERSION"] != DBNull.Value)
+                    {
+                        long version = Convert.ToInt64(row["SYS_CHANGE_VERSION"]);
+                        onWatermarkUpdated?.Invoke(version);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "[UPSERT] Error ejecutando MERGE individual para SourceKey={Key}", row["SourceKey"]);
+                throw;
+            }
         }
 
         public int DeleteBatch(SqlConnection cnx, DataRow[] rows)
