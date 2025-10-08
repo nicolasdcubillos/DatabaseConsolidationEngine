@@ -183,7 +183,7 @@ namespace ConsolidationDashboard
                     while (reader.Read())
                     {
                         var estado = reader["Estado"].ToString().ToLower();
-                        if (estado.Contains("consolidada") || estado.Contains("ok"))
+                        if (estado.Contains("sincronizada") || estado.Contains("consolidada"))
                             consolidadas++;
                         else
                             noConsolidadas++;

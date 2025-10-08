@@ -52,12 +52,12 @@
             // 
             // dashboardTitle
             // 
-            this.dashboardTitle.Font = new System.Drawing.Font("Segoe UI", 18F, System.Drawing.FontStyle.Bold);
+            this.dashboardTitle.Font = new System.Drawing.Font("Segoe UI", 16F, System.Drawing.FontStyle.Bold);
             this.dashboardTitle.Location = new System.Drawing.Point(0, 10);
             this.dashboardTitle.Name = "dashboardTitle";
             this.dashboardTitle.Size = new System.Drawing.Size(1600, 50);
             this.dashboardTitle.TabIndex = 1;
-            this.dashboardTitle.Text = "Dashboard de consolidación";
+            this.dashboardTitle.Text = "Monitoreo de Consolidación de bases de datos";
             this.dashboardTitle.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.dashboardTitle.Click += new System.EventHandler(this.dashboardTitle_Click);
             // 
