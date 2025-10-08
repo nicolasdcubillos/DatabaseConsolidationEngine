@@ -91,7 +91,3 @@ D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsol
 D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\obj\Debug\net9.0\ConsolidationEngine.pdb
 D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\obj\Debug\net9.0\ConsolidationEngine.genruntimeconfig.cache
 D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\obj\Debug\net9.0\ref\ConsolidationEngine.dll
-D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\bin\Debug\net9.0\publish\appsettings.Development.json
-D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\bin\Debug\net9.0\publish\appsettings.json
-D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\bin\Debug\net9.0\publish\ConsolidationEngine.deps.json
-D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\bin\Debug\net9.0\publish\ConsolidationEngine.runtimeconfig.json

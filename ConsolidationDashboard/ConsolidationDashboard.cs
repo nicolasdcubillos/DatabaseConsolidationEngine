@@ -4,18 +4,38 @@ using System.Windows.Forms;
 using System.Configuration;
 using System.Data.SqlClient;
 using System.Linq;
+using System.ComponentModel;
 
 namespace ConsolidationDashboard
 {
     public partial class ConsolidationDashboard : Form
     {
+        private System.Windows.Forms.Timer refreshTimer;
+
         public ConsolidationDashboard()
         {
             InitializeComponent();
+            // Timer para refrescar cada 5 segundos
+            refreshTimer = new System.Windows.Forms.Timer();
+            refreshTimer.Interval = 5000; // 5 segundos
+            refreshTimer.Tick += RefreshTimer_Tick;
+            refreshTimer.Start();
+        }
+
+        private void RefreshTimer_Tick(object sender, EventArgs e)
+        {
+            if (LicenseManager.UsageMode == LicenseUsageMode.Designtime)
+                return;
+            LoadSyncStatus();
+            LoadErrorDetails();
+            LoadLogs();
+            UpdatePieChart();
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            if (LicenseManager.UsageMode == LicenseUsageMode.Designtime)
+                return;
             LoadSyncStatus();
             LoadErrorDetails();
             LoadLogs();

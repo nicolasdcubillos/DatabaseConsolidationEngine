@@ -3,7 +3,7 @@ GO
 
 DECLARE @lote INT = 1;
 DECLARE @totalLotes INT = 5; 
-DECLARE @cantidadLote INT = 5; 
+DECLARE @cantidadLote INT = 20; 
 DECLARE @i INT;
 
 WHILE @lote <= @totalLotes
