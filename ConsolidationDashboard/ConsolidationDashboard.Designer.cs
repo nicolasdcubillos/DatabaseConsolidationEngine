@@ -41,6 +41,7 @@
             this.detalleErroresGroup = new System.Windows.Forms.GroupBox();
             this.logsGroup = new System.Windows.Forms.GroupBox();
             this.logsGrid = new System.Windows.Forms.DataGridView();
+            this.mainPanel = new System.Windows.Forms.Panel();
             ((System.ComponentModel.ISupportInitialize)(this.pieChart)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.GeneralDashboard)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.DetalleErroresGrid)).BeginInit();
@@ -174,19 +175,27 @@
             this.logsGrid.Size = new System.Drawing.Size(1500, 184);
             this.logsGrid.TabIndex = 0;
             // 
+            // mainPanel
+            // 
+            this.mainPanel.AutoScroll = true;
+            this.mainPanel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.mainPanel.Name = "mainPanel";
+            this.mainPanel.TabIndex = 100;
+            // 
             // ConsolidationDashboard
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1600, 796);
-            this.Controls.Add(this.dashboardTitle);
-            this.Controls.Add(this.pieChart);
-            this.Controls.Add(this.resumenGeneralGroup);
-            this.Controls.Add(this.detalleErroresGroup);
-            this.Controls.Add(this.logsGroup);
+            this.Controls.Add(this.mainPanel);
+            this.mainPanel.Controls.Add(this.dashboardTitle);
+            this.mainPanel.Controls.Add(this.pieChart);
+            this.mainPanel.Controls.Add(this.resumenGeneralGroup);
+            this.mainPanel.Controls.Add(this.detalleErroresGroup);
+            this.mainPanel.Controls.Add(this.logsGroup);
             this.Name = "ConsolidationDashboard";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Form1";
+            this.Text = "Monitoreo de Consolidacion";
             this.Load += new System.EventHandler(this.Form1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.pieChart)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.GeneralDashboard)).EndInit();
@@ -209,5 +218,6 @@
         private System.Windows.Forms.GroupBox logsGroup;
         private System.Windows.Forms.DataGridView logsGrid;
         private System.Windows.Forms.DataVisualization.Charting.Chart pieChart;
+        private System.Windows.Forms.Panel mainPanel;
     }
 }
