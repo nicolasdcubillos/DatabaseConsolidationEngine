@@ -42,6 +42,7 @@
             this.logsGroup = new System.Windows.Forms.GroupBox();
             this.logsGrid = new System.Windows.Forms.DataGridView();
             this.mainPanel = new System.Windows.Forms.Panel();
+            this.btnRetryErrors = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pieChart)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.GeneralDashboard)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.DetalleErroresGrid)).BeginInit();
@@ -126,6 +127,7 @@
             this.DetalleErroresGrid.Size = new System.Drawing.Size(1500, 184);
             this.DetalleErroresGrid.TabIndex = 0;
             this.DetalleErroresGrid.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DetalleErroresGrid_CellContentClick);
+            this.DetalleErroresGrid.AllowUserToAddRows = false;
             // 
             // resumenGeneralGroup
             // 
@@ -141,6 +143,7 @@
             // detalleErroresGroup
             // 
             this.detalleErroresGroup.Controls.Add(this.DetalleErroresGrid);
+            this.detalleErroresGroup.Controls.Add(this.btnRetryErrors);
             this.detalleErroresGroup.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
             this.detalleErroresGroup.Location = new System.Drawing.Point(25, 566);
             this.detalleErroresGroup.Name = "detalleErroresGroup";
@@ -182,6 +185,16 @@
             this.mainPanel.Name = "mainPanel";
             this.mainPanel.TabIndex = 100;
             // 
+            // btnRetryErrors
+            // 
+            this.btnRetryErrors.Location = new System.Drawing.Point(25, 220);
+            this.btnRetryErrors.Name = "btnRetryErrors";
+            this.btnRetryErrors.Size = new System.Drawing.Size(200, 30);
+            this.btnRetryErrors.TabIndex = 1;
+            this.btnRetryErrors.Text = "Reintentar Errores Seleccionados";
+            this.btnRetryErrors.UseVisualStyleBackColor = true;
+            this.btnRetryErrors.Click += new System.EventHandler(this.btnRetryErrors_Click);
+            // 
             // ConsolidationDashboard
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -219,5 +232,6 @@
         private System.Windows.Forms.DataGridView logsGrid;
         private System.Windows.Forms.DataVisualization.Charting.Chart pieChart;
         private System.Windows.Forms.Panel mainPanel;
+        private System.Windows.Forms.Button btnRetryErrors;
     }
 }

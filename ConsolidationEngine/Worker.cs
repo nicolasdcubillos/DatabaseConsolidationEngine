@@ -1,5 +1,6 @@
 using ConsolidationEngine.ChangeTracking;
 using ConsolidationEngine.Config;
+using ConsolidationEngine.FaultRetry;
 using ConsolidationEngine.Logger.Exceptions;
 using ConsolidationEngine.Repository;
 using System.Text;
@@ -11,6 +12,7 @@ public class Worker : BackgroundService
     private readonly ILogger<Worker> _logger;
     private readonly IConfiguration _config;
     private readonly ChangeTrackingOrchestator consolidationOrchestator;
+    private readonly FaultRetryProcessor retryProcessor;
     private readonly SqlConnectionChecker connectionChecker;
     private readonly int _heartbeat;
 
@@ -27,6 +29,7 @@ public class Worker : BackgroundService
 
         consolidationOrchestator = new ChangeTrackingOrchestator(settings, _logger);
         connectionChecker = new SqlConnectionChecker(settings, _logger);
+        retryProcessor = new FaultRetryProcessor(settings, _logger);
 
         SqlConnectionBuilder.Instance.Configure(settings.Server, settings.User, settings.Password);
     }
@@ -53,6 +56,7 @@ public class Worker : BackgroundService
                 {
                     _logger.LogInformation("ConsolidationEngine heartbeat at {time}", DateTimeOffset.Now);
                     await consolidationOrchestator.RunAll();
+                    await retryProcessor.RunForAllTargetsAsync();
                 }
                 catch (Exception ex)
                 {

@@ -248,6 +248,11 @@ namespace ConsolidationDashboard
             LoadErrorDetails();
         }
 
+        private void btnRetryErrors_Click(object sender, EventArgs e)
+        {
+            RetrySelectedErrors();
+        }
+
         private void GeneralDashboard_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
 
