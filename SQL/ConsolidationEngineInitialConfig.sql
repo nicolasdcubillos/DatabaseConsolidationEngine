@@ -90,7 +90,8 @@ BEGIN
 
     DECLARE dbs CURSOR FOR
     SELECT DISTINCT SourceDB
-    FROM CONSOLIDADA.dbo.ConsolidationEngineWatermark;
+    FROM CONSOLIDADA.dbo.ConsolidationEngineWatermark
+    WHERE TableName = 'dbo.MVTONIIF'; -- Solo considerar esta tabla
 
     OPEN dbs;
     FETCH NEXT FROM dbs INTO @db;
@@ -107,27 +108,29 @@ BEGIN
             @localVersion AS LocalVersion,
             (SELECT MAX(LastVersion)
              FROM CONSOLIDADA.dbo.ConsolidationEngineWatermark
-             WHERE SourceDB = N''' + @db + N''') AS ConsolidadaVersion,
+             WHERE SourceDB = N''' + @db + N''' AND TableName = ''dbo.MVTONIIF'') AS ConsolidadaVersion,
             CASE
                 WHEN (SELECT MAX(LastVersion)
                       FROM CONSOLIDADA.dbo.ConsolidationEngineWatermark
-                      WHERE SourceDB = N''' + @db + N''') IS NULL THEN ''Sin consolidar''
+                      WHERE SourceDB = N''' + @db + N''' AND TableName = ''dbo.MVTONIIF'') IS NULL THEN ''Sin consolidar''
                 WHEN @localVersion =
                      (SELECT MAX(LastVersion)
                       FROM CONSOLIDADA.dbo.ConsolidationEngineWatermark
-                      WHERE SourceDB = N''' + @db + N''') THEN ''Sincronizada''
+                      WHERE SourceDB = N''' + @db + N''' AND TableName = ''dbo.MVTONIIF'') THEN ''Sincronizada''
                 WHEN @localVersion <
                      (SELECT MAX(LastVersion)
                       FROM CONSOLIDADA.dbo.ConsolidationEngineWatermark
-                      WHERE SourceDB = N''' + @db + N''') THEN ''Desactualizada''
+                      WHERE SourceDB = N''' + @db + N''' AND TableName = ''dbo.MVTONIIF'') THEN ''Desactualizada''
                 WHEN @localVersion >
                      (SELECT MAX(LastVersion)
                       FROM CONSOLIDADA.dbo.ConsolidationEngineWatermark
-                      WHERE SourceDB = N''' + @db + N''') THEN ''Pendiente''
+                      WHERE SourceDB = N''' + @db + N''' AND TableName = ''dbo.MVTONIIF'') THEN ''Pendiente''
                 ELSE ''Error''
             END AS Estado,
-            ISNULL((SELECT COUNT(*) FROM CONSOLIDADA.dbo.ConsolidationEngineErrors WHERE SourceDatabase = N''' + @db + N'''), 0) AS Errores,
-            (SELECT MAX(CreatedAt) FROM CONSOLIDADA.dbo.ConsolidationEngineErrors WHERE SourceDatabase = N''' + @db + N''') AS UltimoError;
+            ISNULL((SELECT COUNT(*) FROM CONSOLIDADA.dbo.ConsolidationEngineErrors 
+                    WHERE SourceDatabase = N''' + @db + N''' AND TableName = ''dbo.MVTONIIF''), 0) AS Errores,
+            (SELECT MAX(CreatedAt) FROM CONSOLIDADA.dbo.ConsolidationEngineErrors 
+             WHERE SourceDatabase = N''' + @db + N''' AND TableName = ''dbo.MVTONIIF'') AS UltimoError;
         ';
 
         EXEC sys.sp_executesql @sql;

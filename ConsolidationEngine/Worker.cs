@@ -14,6 +14,7 @@ public class Worker : BackgroundService
     private readonly ChangeTrackingOrchestator consolidationOrchestator;
     private readonly FaultRetryProcessor retryProcessor;
     private readonly SqlConnectionChecker connectionChecker;
+    private readonly ConsolidationSettings settings;
     private readonly int _heartbeat;
 
     public Worker(ILogger<Worker> logger, IConfiguration config)
@@ -25,7 +26,7 @@ public class Worker : BackgroundService
             ? value
             : 30;
 
-        ConsolidationSettings settings = config.GetSection("ConsolidationEngine").Get<ConsolidationSettings>() ?? new ConsolidationSettings();
+        settings = config.GetSection("ConsolidationEngine").Get<ConsolidationSettings>() ?? new ConsolidationSettings();
 
         consolidationOrchestator = new ChangeTrackingOrchestator(settings, _logger);
         connectionChecker = new SqlConnectionChecker(settings, _logger);
@@ -55,8 +56,11 @@ public class Worker : BackgroundService
                 try
                 {
                     _logger.LogInformation("ConsolidationEngine heartbeat at {time}", DateTimeOffset.Now);
-                    await consolidationOrchestator.RunAll();
-                    await retryProcessor.RunForAllTargetsAsync();
+                    consolidationOrchestator.RunAll();
+                    if (settings.FaultRetryProcessorEnabled)
+                    {
+                        await retryProcessor.RunForAllTargetsAsync();
+                    }
                 }
                 catch (Exception ex)
                 {

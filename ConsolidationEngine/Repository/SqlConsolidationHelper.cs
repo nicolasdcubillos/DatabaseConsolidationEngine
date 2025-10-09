@@ -275,13 +275,13 @@ namespace ConsolidationEngine.Repository
                     if (row.Table.Columns.Contains("SYS_CHANGE_VERSION") && row["SYS_CHANGE_VERSION"] != DBNull.Value)
                     {
                         long version = Convert.ToInt64(row["SYS_CHANGE_VERSION"]);
-                        onWatermarkUpdated?.Invoke(version);
+                        //onWatermarkUpdated?.Invoke(version);
                     }
                 }
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "[UPSERT] Error ejecutando MERGE individual para SourceKey={Key}", row["SourceKey"]);
+                //logger.LogError(ex, "[UPSERT] Error ejecutando MERGE individual para SourceKey={Key}", row["SourceKey"]);
                 throw;
             }
         }

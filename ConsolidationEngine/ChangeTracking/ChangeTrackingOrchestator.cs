@@ -1,4 +1,5 @@
 ﻿using ConsolidationEngine.Config;
+using System.Collections.Concurrent;
 using System.Threading.Tasks;
 
 namespace ConsolidationEngine.ChangeTracking
@@ -6,6 +7,7 @@ namespace ConsolidationEngine.ChangeTracking
     public class ChangeTrackingOrchestator
     {
         private readonly ConsolidationSettings _settings;
+        private readonly ConcurrentDictionary<string, Task> _runningJobs = new();
         private readonly ILogger _logger;
 
         public ChangeTrackingOrchestator(ConsolidationSettings settings, ILogger logger)
@@ -14,18 +16,25 @@ namespace ConsolidationEngine.ChangeTracking
             _logger = logger;
         }
 
-        public async Task RunAll()
+        public void RunAll()
         {
-            var tasks = new List<Task>();
             foreach (var dbPair in _settings.Databases)
             {
-                _logger.LogInformation("[ORCHESTATOR] Checkeando {origen} -> {destino}", dbPair.Origin, dbPair.Target);
                 foreach (var table in _settings.Tables)
                 {
-                    tasks.Add(Task.Run(() =>
+                    var key = $"{dbPair.Origin}.{table.Name}";
+                    if (_runningJobs.ContainsKey(key))
+                    {
+                        _logger.LogWarning("[ORCHESTRATOR] Ya hay un job corriendo para {key}, se omite.", key);
+                        continue;
+                    }
+
+                    var task = Task.Run(() =>
                     {
                         try
                         {
+                            _logger.LogInformation("[ORCHESTRATOR] Iniciando job {key}", key);
+
                             ChangeTrackingETL etl = new ChangeTrackingETL(
                                 server: _settings.Server,
                                 originDb: dbPair.Origin,
@@ -37,20 +46,23 @@ namespace ConsolidationEngine.ChangeTracking
                                 batchSize: _settings.BatchSize,
                                 logger: _logger
                             );
+
                             etl.Run();
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogError(
-                                ex,
-                                "[ORCHESTATOR] {Origin}.{Table} -> {Target} falló",
-                                dbPair.Origin, table.Name, dbPair.Target
-                            );
+                            _logger.LogError(ex, "[ORCHESTRATOR] Job {key} falló.", key);
                         }
-                    }));
+                        finally
+                        {
+                            _runningJobs.TryRemove(key, out _);
+                            //_logger.LogInformation("[ORCHESTRATOR] Job {key} finalizado.", key);
+                        }
+                    });
+
+                    _runningJobs[key] = task;
                 }
             }
-            await Task.WhenAll(tasks);
         }
     }
 }

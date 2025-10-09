@@ -8,6 +8,7 @@
         public string Password { get; set; }
         public List<DatabasePairConfig> Databases { get; set; } = new();
         public List<TableConfig> Tables { get; set; } = new();
+        public bool FaultRetryProcessorEnabled { get; set; } = true;
     }
 
     public class DatabasePairConfig

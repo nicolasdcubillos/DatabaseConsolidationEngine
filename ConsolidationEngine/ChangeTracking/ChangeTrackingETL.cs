@@ -93,6 +93,7 @@ namespace ConsolidationEngine.ChangeTracking
             if (rowsUpserted != 0 && rowsUpserted != insUpd.Length)
             {
                 _dualLogger.Log(LogLevel.Warning, $"[CHANGE TRACKING ETL] UPSERT: Se esperaba procesar {insUpd.Length} filas pero MERGE afectó {rowsUpserted}", _originDb, _targetDb, _table);
+                sqlConsolidationHelper.SetWatermark(cnxTarget, toVersion);
             }
 
             // Delete
@@ -102,6 +103,7 @@ namespace ConsolidationEngine.ChangeTracking
             if (rowsDeleted != 0 && rowsDeleted != delRows.Length)
             {
                 _dualLogger.Log(LogLevel.Warning, $"[CHANGE TRACKING ETL] DELETE: Se esperaba procesar {delRows.Length} filas pero afectó {rowsDeleted}", _originDb, _targetDb, _table);
+                sqlConsolidationHelper.SetWatermark(cnxTarget, toVersion);
             }
 
             sqlConsolidationHelper.SetWatermark(cnxTarget, toVersion);
