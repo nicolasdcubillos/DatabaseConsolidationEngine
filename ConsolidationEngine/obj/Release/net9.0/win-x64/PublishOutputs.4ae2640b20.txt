@@ -185,7 +185,7 @@ D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsol
 D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\publish\hostfxr.dll
 D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\publish\hostpolicy.dll
 D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\publish\mscordaccore.dll
-D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\publish\mscordaccore_amd64_amd64_9.0.925.41916.dll
+D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\publish\mscordaccore_amd64_amd64_9.0.1025.47515.dll
 D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\publish\mscordbi.dll
 D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\publish\mscorrc.dll
 D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\publish\msquic.dll

@@ -252,7 +252,6 @@ D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsol
 D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\bin\Release\net9.0\win-x64\hostfxr.dll
 D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\bin\Release\net9.0\win-x64\hostpolicy.dll
 D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\bin\Release\net9.0\win-x64\mscordaccore.dll
-D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\bin\Release\net9.0\win-x64\mscordaccore_amd64_amd64_9.0.925.41916.dll
 D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\bin\Release\net9.0\win-x64\mscordbi.dll
 D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\bin\Release\net9.0\win-x64\mscorrc.dll
 D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\bin\Release\net9.0\win-x64\msquic.dll
@@ -268,3 +267,4 @@ D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsol
 D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\obj\Release\net9.0\win-x64\ConsolidationEngine.pdb
 D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\obj\Release\net9.0\win-x64\ConsolidationEngine.genruntimeconfig.cache
 D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\obj\Release\net9.0\win-x64\ref\ConsolidationEngine.dll
+D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\bin\Release\net9.0\win-x64\mscordaccore_amd64_amd64_9.0.1025.47515.dll

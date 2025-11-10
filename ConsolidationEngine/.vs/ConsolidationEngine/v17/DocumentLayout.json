@@ -3,12 +3,16 @@
   "WorkspaceRootPath": "D:\\NICOLASD\\PERSONAL\\CC SISTEMAS\\OFIMATICA\\MARISTAS\\Consolidacion\\DatabaseConsolidationEngine\\ConsolidationEngine\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{DE74E276-D186-2FFB-3248-B99CDE7E769A}|ConsolidationEngine.csproj|d:\\nicolasd\\personal\\cc sistemas\\ofimatica\\maristas\\consolidacion\\databaseconsolidationengine\\consolidationengine\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
-      "RelativeMoniker": "D:0:0:{DE74E276-D186-2FFB-3248-B99CDE7E769A}|ConsolidationEngine.csproj|solutionrelative:appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+      "AbsoluteMoniker": "D:0:0:{DE74E276-D186-2FFB-3248-B99CDE7E769A}|ConsolidationEngine.csproj|d:\\nicolasd\\personal\\cc sistemas\\ofimatica\\maristas\\consolidacion\\databaseconsolidationengine\\consolidationengine\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{DE74E276-D186-2FFB-3248-B99CDE7E769A}|ConsolidationEngine.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{DE74E276-D186-2FFB-3248-B99CDE7E769A}|ConsolidationEngine.csproj|d:\\nicolasd\\personal\\cc sistemas\\ofimatica\\maristas\\consolidacion\\databaseconsolidationengine\\consolidationengine\\faultretry\\faultretryprocessor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{DE74E276-D186-2FFB-3248-B99CDE7E769A}|ConsolidationEngine.csproj|solutionrelative:faultretry\\faultretryprocessor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{DE74E276-D186-2FFB-3248-B99CDE7E769A}|ConsolidationEngine.csproj|d:\\nicolasd\\personal\\cc sistemas\\ofimatica\\maristas\\consolidacion\\databaseconsolidationengine\\consolidationengine\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{DE74E276-D186-2FFB-3248-B99CDE7E769A}|ConsolidationEngine.csproj|solutionrelative:appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{DE74E276-D186-2FFB-3248-B99CDE7E769A}|ConsolidationEngine.csproj|d:\\nicolasd\\personal\\cc sistemas\\ofimatica\\maristas\\consolidacion\\databaseconsolidationengine\\consolidationengine\\repository\\sqlconsolidationhelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -39,10 +43,6 @@
       "RelativeMoniker": "D:0:0:{DE74E276-D186-2FFB-3248-B99CDE7E769A}|ConsolidationEngine.csproj|solutionrelative:repository\\sqlschemavalidator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{DE74E276-D186-2FFB-3248-B99CDE7E769A}|ConsolidationEngine.csproj|d:\\nicolasd\\personal\\cc sistemas\\ofimatica\\maristas\\consolidacion\\databaseconsolidationengine\\consolidationengine\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{DE74E276-D186-2FFB-3248-B99CDE7E769A}|ConsolidationEngine.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{DE74E276-D186-2FFB-3248-B99CDE7E769A}|ConsolidationEngine.csproj|d:\\nicolasd\\personal\\cc sistemas\\ofimatica\\maristas\\consolidacion\\databaseconsolidationengine\\consolidationengine\\repository\\sqlrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{DE74E276-D186-2FFB-3248-B99CDE7E769A}|ConsolidationEngine.csproj|solutionrelative:repository\\sqlrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
@@ -66,15 +66,11 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 7,
+          "SelectedChildIndex": 3,
           "Children": [
             {
-              "$type": "Bookmark",
-              "Name": "ST:0:0:{56df62a4-05a3-4e5b-aa1a-99371ccfb997}"
-            },
-            {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 4,
               "Title": "ChangeTrackingETL.cs",
               "DocumentMoniker": "D:\\NICOLASD\\PERSONAL\\CC SISTEMAS\\OFIMATICA\\MARISTAS\\Consolidacion\\DatabaseConsolidationEngine\\ConsolidationEngine\\ChangeTracking\\ChangeTrackingETL.cs",
               "RelativeDocumentMoniker": "ChangeTracking\\ChangeTrackingETL.cs",
@@ -87,8 +83,12 @@
               "EditorCaption": ""
             },
             {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{56df62a4-05a3-4e5b-aa1a-99371ccfb997}"
+            },
+            {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 7,
               "Title": "Worker.cs",
               "DocumentMoniker": "D:\\NICOLASD\\PERSONAL\\CC SISTEMAS\\OFIMATICA\\MARISTAS\\Consolidacion\\DatabaseConsolidationEngine\\ConsolidationEngine\\Worker.cs",
               "RelativeDocumentMoniker": "Worker.cs",
@@ -101,7 +101,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 9,
+              "DocumentIndex": 0,
               "Title": "Program.cs",
               "DocumentMoniker": "D:\\NICOLASD\\PERSONAL\\CC SISTEMAS\\OFIMATICA\\MARISTAS\\Consolidacion\\DatabaseConsolidationEngine\\ConsolidationEngine\\Program.cs",
               "RelativeDocumentMoniker": "Program.cs",
@@ -120,14 +120,14 @@
               "RelativeDocumentMoniker": "FaultRetry\\FaultRetryProcessor.cs",
               "ToolTip": "D:\\NICOLASD\\PERSONAL\\CC SISTEMAS\\OFIMATICA\\MARISTAS\\Consolidacion\\DatabaseConsolidationEngine\\ConsolidationEngine\\FaultRetry\\FaultRetryProcessor.cs",
               "RelativeToolTip": "FaultRetry\\FaultRetryProcessor.cs",
-              "ViewState": "AgIAAGkAAAAAAAAAAAAUwHUAAAAQAAAAAAAAAA==",
+              "ViewState": "AgIAAGkAAAAAAAAAAAAUwGoAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-10-08T06:35:00.701Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
+              "DocumentIndex": 9,
               "Title": "SqlSchemaValidator.cs",
               "DocumentMoniker": "D:\\NICOLASD\\PERSONAL\\CC SISTEMAS\\OFIMATICA\\MARISTAS\\Consolidacion\\DatabaseConsolidationEngine\\ConsolidationEngine\\Repository\\SqlSchemaValidator.cs",
               "RelativeDocumentMoniker": "Repository\\SqlSchemaValidator.cs",
@@ -140,7 +140,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 8,
               "Title": "SqlConnectionBuilder.cs",
               "DocumentMoniker": "D:\\NICOLASD\\PERSONAL\\CC SISTEMAS\\OFIMATICA\\MARISTAS\\Consolidacion\\DatabaseConsolidationEngine\\ConsolidationEngine\\Repository\\SqlConnectionBuilder.cs",
               "RelativeDocumentMoniker": "Repository\\SqlConnectionBuilder.cs",
@@ -153,7 +153,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 2,
               "Title": "appsettings.json",
               "DocumentMoniker": "D:\\NICOLASD\\PERSONAL\\CC SISTEMAS\\OFIMATICA\\MARISTAS\\Consolidacion\\DatabaseConsolidationEngine\\ConsolidationEngine\\appsettings.json",
               "RelativeDocumentMoniker": "appsettings.json",
@@ -166,7 +166,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 3,
               "Title": "SqlConsolidationHelper.cs",
               "DocumentMoniker": "D:\\NICOLASD\\PERSONAL\\CC SISTEMAS\\OFIMATICA\\MARISTAS\\Consolidacion\\DatabaseConsolidationEngine\\ConsolidationEngine\\Repository\\SqlConsolidationHelper.cs",
               "RelativeDocumentMoniker": "Repository\\SqlConsolidationHelper.cs",
@@ -179,7 +179,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 6,
               "Title": "ChangeTrackingOrchestator.cs",
               "DocumentMoniker": "D:\\NICOLASD\\PERSONAL\\CC SISTEMAS\\OFIMATICA\\MARISTAS\\Consolidacion\\DatabaseConsolidationEngine\\ConsolidationEngine\\ChangeTracking\\ChangeTrackingOrchestator.cs",
               "RelativeDocumentMoniker": "ChangeTracking\\ChangeTrackingOrchestator.cs",
@@ -192,7 +192,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 5,
               "Title": "ConsolidationSettings.cs",
               "DocumentMoniker": "D:\\NICOLASD\\PERSONAL\\CC SISTEMAS\\OFIMATICA\\MARISTAS\\Consolidacion\\DatabaseConsolidationEngine\\ConsolidationEngine\\Config\\ConsolidationSettings.cs",
               "RelativeDocumentMoniker": "Config\\ConsolidationSettings.cs",
