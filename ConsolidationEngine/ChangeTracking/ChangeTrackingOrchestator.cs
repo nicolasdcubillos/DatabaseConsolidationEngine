@@ -43,6 +43,7 @@ namespace ConsolidationEngine.ChangeTracking
                                 password: _settings.Password,
                                 table: table.Name,
                                 keyCol: table.KeyColumn,
+                                skipPrimaryKey: table.SkipPrimaryKey,
                                 batchSize: _settings.BatchSize,
                                 logger: _logger
                             );

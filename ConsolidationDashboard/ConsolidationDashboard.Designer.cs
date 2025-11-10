@@ -39,10 +39,11 @@
             this.DetalleErroresGrid = new System.Windows.Forms.DataGridView();
             this.resumenGeneralGroup = new System.Windows.Forms.GroupBox();
             this.detalleErroresGroup = new System.Windows.Forms.GroupBox();
+            this.btnRetryErrors = new System.Windows.Forms.Button();
             this.logsGroup = new System.Windows.Forms.GroupBox();
             this.logsGrid = new System.Windows.Forms.DataGridView();
             this.mainPanel = new System.Windows.Forms.Panel();
-            this.btnRetryErrors = new System.Windows.Forms.Button();
+            this.btnActualizar = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pieChart)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.GeneralDashboard)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.DetalleErroresGrid)).BeginInit();
@@ -50,6 +51,7 @@
             this.detalleErroresGroup.SuspendLayout();
             this.logsGroup.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.logsGrid)).BeginInit();
+            this.mainPanel.SuspendLayout();
             this.SuspendLayout();
             // 
             // dashboardTitle
@@ -114,6 +116,7 @@
             // 
             // DetalleErroresGrid
             // 
+            this.DetalleErroresGrid.AllowUserToAddRows = false;
             this.DetalleErroresGrid.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.DetalleErroresGrid.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
             this.DetalleErroresGrid.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
@@ -124,10 +127,9 @@
             this.DetalleErroresGrid.Name = "DetalleErroresGrid";
             this.DetalleErroresGrid.RowHeadersVisible = false;
             this.DetalleErroresGrid.RowTemplate.Height = 30;
-            this.DetalleErroresGrid.Size = new System.Drawing.Size(1500, 184);
+            this.DetalleErroresGrid.Size = new System.Drawing.Size(1500, 170);
             this.DetalleErroresGrid.TabIndex = 0;
             this.DetalleErroresGrid.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DetalleErroresGrid_CellContentClick);
-            this.DetalleErroresGrid.AllowUserToAddRows = false;
             // 
             // resumenGeneralGroup
             // 
@@ -147,16 +149,26 @@
             this.detalleErroresGroup.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
             this.detalleErroresGroup.Location = new System.Drawing.Point(25, 566);
             this.detalleErroresGroup.Name = "detalleErroresGroup";
-            this.detalleErroresGroup.Size = new System.Drawing.Size(1550, 234);
+            this.detalleErroresGroup.Size = new System.Drawing.Size(1550, 250);
             this.detalleErroresGroup.TabIndex = 3;
             this.detalleErroresGroup.TabStop = false;
             this.detalleErroresGroup.Text = "Detalle de errores";
+            // 
+            // btnRetryErrors
+            // 
+            this.btnRetryErrors.Location = new System.Drawing.Point(25, 210);
+            this.btnRetryErrors.Name = "btnRetryErrors";
+            this.btnRetryErrors.Size = new System.Drawing.Size(200, 30);
+            this.btnRetryErrors.TabIndex = 1;
+            this.btnRetryErrors.Text = "Reintentar todo";
+            this.btnRetryErrors.UseVisualStyleBackColor = true;
+            this.btnRetryErrors.Click += new System.EventHandler(this.btnRetryErrors_Click);
             // 
             // logsGroup
             // 
             this.logsGroup.Controls.Add(this.logsGrid);
             this.logsGroup.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
-            this.logsGroup.Location = new System.Drawing.Point(25, 806);
+            this.logsGroup.Location = new System.Drawing.Point(25, 826);
             this.logsGroup.Name = "logsGroup";
             this.logsGroup.Size = new System.Drawing.Size(1550, 245);
             this.logsGroup.TabIndex = 4;
@@ -181,19 +193,28 @@
             // mainPanel
             // 
             this.mainPanel.AutoScroll = true;
+            this.mainPanel.Controls.Add(this.dashboardTitle);
+            this.mainPanel.Controls.Add(this.pieChart);
+            this.mainPanel.Controls.Add(this.btnActualizar);
+            this.mainPanel.Controls.Add(this.resumenGeneralGroup);
+            this.mainPanel.Controls.Add(this.detalleErroresGroup);
+            this.mainPanel.Controls.Add(this.logsGroup);
             this.mainPanel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.mainPanel.Location = new System.Drawing.Point(0, 0);
             this.mainPanel.Name = "mainPanel";
+            this.mainPanel.Size = new System.Drawing.Size(1600, 796);
             this.mainPanel.TabIndex = 100;
             // 
-            // btnRetryErrors
+            // btnActualizar
             // 
-            this.btnRetryErrors.Location = new System.Drawing.Point(25, 220);
-            this.btnRetryErrors.Name = "btnRetryErrors";
-            this.btnRetryErrors.Size = new System.Drawing.Size(200, 30);
-            this.btnRetryErrors.TabIndex = 1;
-            this.btnRetryErrors.Text = "Reintentar Errores Seleccionados";
-            this.btnRetryErrors.UseVisualStyleBackColor = true;
-            this.btnRetryErrors.Click += new System.EventHandler(this.btnRetryErrors_Click);
+            this.btnActualizar.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnActualizar.Location = new System.Drawing.Point(1425, 300);
+            this.btnActualizar.Name = "btnActualizar";
+            this.btnActualizar.Size = new System.Drawing.Size(150, 30);
+            this.btnActualizar.TabIndex = 2;
+            this.btnActualizar.Text = "Actualizar";
+            this.btnActualizar.UseVisualStyleBackColor = true;
+            this.btnActualizar.Click += new System.EventHandler(this.btnActualizar_Click);
             // 
             // ConsolidationDashboard
             // 
@@ -201,11 +222,6 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1600, 796);
             this.Controls.Add(this.mainPanel);
-            this.mainPanel.Controls.Add(this.dashboardTitle);
-            this.mainPanel.Controls.Add(this.pieChart);
-            this.mainPanel.Controls.Add(this.resumenGeneralGroup);
-            this.mainPanel.Controls.Add(this.detalleErroresGroup);
-            this.mainPanel.Controls.Add(this.logsGroup);
             this.Name = "ConsolidationDashboard";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Monitoreo de Consolidacion";
@@ -217,6 +233,7 @@
             this.detalleErroresGroup.ResumeLayout(false);
             this.logsGroup.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.logsGrid)).EndInit();
+            this.mainPanel.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -233,5 +250,6 @@
         private System.Windows.Forms.DataVisualization.Charting.Chart pieChart;
         private System.Windows.Forms.Panel mainPanel;
         private System.Windows.Forms.Button btnRetryErrors;
+        private System.Windows.Forms.Button btnActualizar;
     }
 }

@@ -1,9 +1,11 @@
 ﻿using ConsolidationEngine.Config;
 using ConsolidationEngine.Repository;
+using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace ConsolidationEngine.FaultRetry
@@ -86,30 +88,56 @@ namespace ConsolidationEngine.FaultRetry
         }
 
         /// <summary>
-        /// Mock del proceso de reintento (Insert simulado por ahora).
+        /// Proceso de reintento
         /// </summary>
         private async Task RetryRecordAsync(Dictionary<string, object> error, string database)
         {
             var id = error.GetValueOrDefault("Id");
+            var sourceKey = error.GetValueOrDefault("SourceKey")?.ToString()?.Trim();
+            var tableName = error.GetValueOrDefault("TableName")?.ToString()?.Trim();
+            var payloadSql = error.GetValueOrDefault("Payload")?.ToString()?.Trim();
 
-            _logger.LogInformation("[FaultRetryProcessor] Retrying record Id={id} in {database}", id, database);
+            _logger.LogInformation("[FaultRetryProcessor] Retrying record Id={id} (SourceKey={sourceKey}) in {database}", id, sourceKey, database);
 
-            // Mock insert: más adelante aquí irá la lógica real del retry
-            var mockData = new Dictionary<string, object>
+            if (string.IsNullOrEmpty(payloadSql))
             {
-                ["ErrorId"] = id ?? DBNull.Value,
-                ["ProcessedAt"] = DateTime.UtcNow,
-                ["Status"] = "Retried (Mock)"
-            };
+                _logger.LogWarning("[FaultRetryProcessor] No SQL payload found for ErrorId={id}", id);
+                return;
+            }
 
-            await SqlRepository.InsertAsync(
-                tableName: "ConsolidationEngineRetries",
-                data: mockData,
-                database: database
-            );
+            try
+            {
+                using var cnx = SqlConnectionBuilder.Instance.CreateConnection(database);
+                await cnx.OpenAsync();
 
-            _logger.LogInformation("[FaultRetryProcessor] Mock retry completed for ErrorId={id} in {database}", id, database);
+                using var cmd = new SqlCommand(payloadSql, cnx)
+                {
+                    CommandTimeout = 120 // opcional, por si el query tarda
+                };
+
+                var rows = await cmd.ExecuteNonQueryAsync();
+
+                _logger.LogInformation("[FaultRetryProcessor] Retry successful for ErrorId={id} (RowsAffected={rows})", id, rows);
+
+                // Marcar el registro como reintentado
+                var updateRetrySql = @"
+                    UPDATE dbo.ConsolidationEngineErrors
+                    SET Retry = 2,
+                        RetryCount = RetryCount + 1
+                    WHERE Id = @Id;";
+
+                using var updateCmd = new SqlCommand(updateRetrySql, cnx);
+                updateCmd.Parameters.AddWithValue("@Id", id);
+                await updateCmd.ExecuteNonQueryAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[FaultRetryProcessor] Retry failed for ErrorId={id} in {database}", id, database);
+            }
+
+            _logger.LogInformation("[FaultRetryProcessor] Retry completed for ErrorId={id} in {database}", id, database);
         }
+
 
         /// <summary>
         /// Extrae la lista única de bases de datos destino desde los settings.

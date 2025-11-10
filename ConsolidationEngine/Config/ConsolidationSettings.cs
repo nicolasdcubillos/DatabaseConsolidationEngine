@@ -21,5 +21,6 @@
     {
         public string Name { get; set; }
         public string KeyColumn { get; set; }
+        public bool SkipPrimaryKey { get; set; } = false;
     }
 }

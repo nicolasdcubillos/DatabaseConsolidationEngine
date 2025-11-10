@@ -28,7 +28,7 @@ BEGIN
         ErrorDetails NVARCHAR(MAX) NULL,
         Payload NVARCHAR(MAX) NULL,
         RetryCount INT NOT NULL DEFAULT 0,
-        Retry BIT DEFAULT 0,
+        Retry INT DEFAULT 0,
         CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
     );
 END;
@@ -58,7 +58,7 @@ SELECT TOP (25)
     ce.Id,
     ce.SourceDatabase,
     ce.TableName,
-    ce.ErrorMessage,
+    ce.ErrorDetails,
     ce.CreatedAt
 FROM CONSOLIDADA.dbo.ConsolidationEngineErrors ce
 ORDER BY ce.CreatedAt DESC;
@@ -69,6 +69,17 @@ AS
 SELECT TOP (25) *
 FROM CONSOLIDADA.dbo.ConsolidationEngineLogs ce
 ORDER BY ce.CreatedAt DESC;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.ConsolidationEngineRetryAll
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE dbo.ConsolidationEngineErrors
+    SET Retry = 1
+    WHERE Retry = 0;
+END;
 GO
 
 CREATE OR ALTER PROCEDURE dbo.ConsolidationEngineStatus
@@ -128,7 +139,7 @@ BEGIN
                 ELSE ''Error''
             END AS Estado,
             ISNULL((SELECT COUNT(*) FROM CONSOLIDADA.dbo.ConsolidationEngineErrors 
-                    WHERE SourceDatabase = N''' + @db + N''' AND TableName = ''dbo.MVTONIIF''), 0) AS Errores,
+                    WHERE SourceDatabase = N''' + @db + N''' AND TableName = ''dbo.MVTONIIF'' AND Retry != 2), 0) AS Errores,
             (SELECT MAX(CreatedAt) FROM CONSOLIDADA.dbo.ConsolidationEngineErrors 
              WHERE SourceDatabase = N''' + @db + N''' AND TableName = ''dbo.MVTONIIF'') AS UltimoError;
         ';

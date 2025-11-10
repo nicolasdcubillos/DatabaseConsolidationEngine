@@ -11,6 +11,7 @@ namespace ConsolidationEngine.ChangeTracking
         private readonly string _originDb;
         private readonly string _targetDb;
         private readonly string _table;
+        private readonly bool _skipPrimaryKey;
 
         public ChangeTrackingETL(
             string server,
@@ -20,15 +21,17 @@ namespace ConsolidationEngine.ChangeTracking
             string password,
             string table,
             string keyCol,
+            bool skipPrimaryKey,
             int batchSize,
             ILogger logger)
         {
-            sqlConsolidationHelper = new SqlConsolidationHelper(server, originDb, targetDb, table, keyCol, batchSize, logger);
+            sqlConsolidationHelper = new SqlConsolidationHelper(server, originDb, targetDb, table, keyCol, batchSize, skipPrimaryKey, logger);
             _logger = logger;
             _dualLogger = new DualLogger(logger);
             _originDb = originDb;
             _targetDb = targetDb;
             _table = table;
+            _skipPrimaryKey = skipPrimaryKey;
         }
 
         public void Run()
@@ -89,7 +92,7 @@ namespace ConsolidationEngine.ChangeTracking
             // Upsert
 
             var insUpd = changes.Select("SYS_CHANGE_OPERATION IN ('I','U')");
-            int rowsUpserted = sqlConsolidationHelper.UpsertBatchWithFallback(cnxTarget, insUpd);
+            int rowsUpserted = sqlConsolidationHelper.UpsertBatchWithFallback(_targetDb, insUpd);
             if (rowsUpserted != 0 && rowsUpserted != insUpd.Length)
             {
                 _dualLogger.Log(LogLevel.Warning, $"[CHANGE TRACKING ETL] UPSERT: Se esperaba procesar {insUpd.Length} filas pero MERGE afectó {rowsUpserted}", _originDb, _targetDb, _table);

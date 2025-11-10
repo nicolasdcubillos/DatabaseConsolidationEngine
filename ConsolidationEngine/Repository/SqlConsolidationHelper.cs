@@ -3,8 +3,10 @@ using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace ConsolidationEngine.Repository
@@ -19,6 +21,7 @@ namespace ConsolidationEngine.Repository
         private readonly int _batchSize;
         private readonly ILogger _logger;
         private readonly DualLogger _dualLogger;
+        private readonly bool _skipPrimaryKey;
 
         public SqlConsolidationHelper(
             string server,
@@ -27,6 +30,7 @@ namespace ConsolidationEngine.Repository
             string table,
             string keyCol,
             int batchSize,
+            bool skipPrimaryKey,
             ILogger logger)
         {
             _server = server;
@@ -37,6 +41,7 @@ namespace ConsolidationEngine.Repository
             _batchSize = batchSize;
             _logger = logger;
             _dualLogger = new DualLogger(logger);
+            _skipPrimaryKey = skipPrimaryKey;
         }
 
         public long GetCurrentVersion(SqlConnection cnx)
@@ -110,8 +115,11 @@ namespace ConsolidationEngine.Repository
             return dt;
         }
 
-        public int UpsertBatchWithFallback(SqlConnection cnx, DataRow[] rows)
+        public int UpsertBatchWithFallback(string targetDb, DataRow[] rows)
         {
+            using SqlConnection cnx = SqlConnectionBuilder.Instance.CreateConnection(targetDb);
+            cnx.Open();
+
             int rowsAffected = 0;
 
             if (rows.Length == 0) return 0;
@@ -129,10 +137,13 @@ namespace ConsolidationEngine.Repository
             if (!allCols.Contains("SourceKey"))
                 allCols.Add("SourceKey");
 
-            // Columnas sin PK para insert
+            // Cuando se debe skipear la PK, la excluimos de los inserts y updates
+            var colsExcludingPkForInsert = _skipPrimaryKey
+                ? allCols.Where(c => !string.Equals(c, _keyCol, StringComparison.OrdinalIgnoreCase)).ToList()
+                : allCols.ToList();
 
-            var insertCols = string.Join(",", allCols.Where(c => c != _keyCol));
-            var insertValues = string.Join(",", allCols.Where(c => c != _keyCol).Select(c => $"SRC.{c}"));
+            var insertCols = string.Join(",", colsExcludingPkForInsert);
+            var insertValues = string.Join(",", colsExcludingPkForInsert.Select(c => $"SRC.{c}"));
 
             // Columnas completas para crear #stage
 
@@ -172,9 +183,13 @@ namespace ConsolidationEngine.Repository
                 bulkCopy.WriteToServer(tempTable);
             }
 
-            // SET clause para UPDATE
+            // SET clause para UPDATE (si skipeamos PK, no está en la lista de columnas a setear)
 
-            var setClause = string.Join(",", allCols.Where(c => c != _keyCol && c != "SourceKey").Select(c => $"TARGET.{c}=SRC.{c}"));
+            var setClauseCols = _skipPrimaryKey
+                ? allCols.Where(c => !string.Equals(c, _keyCol, StringComparison.OrdinalIgnoreCase) && c != "SourceKey")
+                : allCols.Where(c => c != "SourceKey");
+
+            var setClause = string.Join(",", setClauseCols.Select(c => $"TARGET.{c}=SRC.{c}"));
 
             // Merge
 
@@ -198,14 +213,20 @@ namespace ConsolidationEngine.Repository
             }
             catch (Exception)
             {
+                string singleMerge = null;
                 _logger.LogWarning("[UPSERT] MERGE falló, procesando fila por fila para capturar errores.");
 
                 foreach (DataRow row in tempTable.Rows)
                 {
+                    SqlConnection retryConnection = null;
+
                     try
                     {
+                        retryConnection = SqlConnectionBuilder.Instance.CreateConnection(targetDb);
+                        retryConnection.Open();
+
                         ExecuteSingleMerge(
-                            cnx: cnx,
+                            cnx: retryConnection,
                             tableName: _table,
                             allCols: allCols,
                             setClause: setClause,
@@ -213,8 +234,11 @@ namespace ConsolidationEngine.Repository
                             insertValues: insertValues,
                             row: row,
                             onWatermarkUpdated: version => SetWatermark(cnx, version),
-                            logger: _logger
+                            logger: _logger,
+                            out singleMerge
                         );
+
+                        retryConnection.Close();
                     }
                     catch (Exception exRow)
                     {
@@ -225,15 +249,86 @@ namespace ConsolidationEngine.Repository
                             "IndividualMerge",
                             exRow.GetType().ToString(),
                             exRow.Message,
-                            "",
+                            singleMerge ?? "",
                             "0",
                             _targetDb
                         );
                     }
+                    finally
+                    {
+                        retryConnection?.Close();
+                    }
                 }
             }
 
+            cnx.Close();
+
             return rowsAffected;
+        }
+
+        public static void ExecuteSingleUpsert(
+            SqlConnection cnx,
+            string tableName,
+            string keyCol,
+            IReadOnlyList<string> allCols,
+            DataRow row,
+            ILogger logger)
+        {
+            using var tran = cnx.BeginTransaction();
+
+            try
+            {
+                if (!allCols.Contains("SourceKey"))
+                    throw new ArgumentException("La lista de columnas debe incluir 'SourceKey'.");
+
+                string setClause = string.Join(", ", allCols
+                    .Where(c => c != keyCol && c != "SourceKey")
+                    .Select(c => $"T.{c} = @{c}"));
+
+                string insertCols = string.Join(", ", allCols);
+                string insertValues = string.Join(", ", allCols.Select(c => $"@{c}"));
+
+                var updateSql = $@"
+                    UPDATE T
+                    SET {setClause}
+                    FROM {tableName} AS T
+                    WHERE T.SourceKey = @SourceKey;";
+
+                using var cmdUpdate = new SqlCommand(updateSql, cnx, tran);
+                foreach (var col in allCols)
+                    cmdUpdate.Parameters.AddWithValue($"@{col}", row[col] ?? DBNull.Value);
+
+                int updated = cmdUpdate.ExecuteNonQuery();
+
+                if (updated == 0)
+                {
+                    var insertSql = $@"
+                INSERT INTO {tableName} ({insertCols})
+                VALUES ({insertValues});";
+
+                    using var cmdInsert = new SqlCommand(insertSql, cnx, tran);
+                    foreach (var col in allCols)
+                        cmdInsert.Parameters.AddWithValue($"@{col}", row[col] ?? DBNull.Value);
+
+                    try
+                    {
+                        cmdInsert.ExecuteNonQuery();
+                    }
+                    catch (SqlException ex) when (ex.Number == 2627) // PK violation
+                    {
+                        // Otra transacción insertó al mismo tiempo → hacemos UPDATE
+                        cmdUpdate.ExecuteNonQuery();
+                    }
+                }
+
+                tran.Commit();
+            }
+            catch (Exception ex)
+            {
+                tran.Rollback();
+                logger.LogError(ex, "Error en upsert de SourceKey={Key}", row["SourceKey"]);
+                throw;
+            }
         }
 
         public static void ExecuteSingleMerge(
@@ -245,9 +340,10 @@ namespace ConsolidationEngine.Repository
            string insertValues,
            DataRow row,
            Action<long>? onWatermarkUpdated,
-           ILogger logger)
+           ILogger logger,
+           out string sqlCommandToRetry)
         {
-            var singleMerge = $@"
+            string singleMerge = $@"
             MERGE {tableName} AS TARGET
             USING (SELECT {string.Join(",", allCols.Select(c => $"@{c} AS {c}"))}) AS SRC
             ON TARGET.SourceKey = SRC.SourceKey
@@ -263,6 +359,8 @@ namespace ConsolidationEngine.Repository
 
                 foreach (var col in allCols)
                     cmdRow.Parameters.AddWithValue($"@{col}", row[col] ?? DBNull.Value);
+
+                sqlCommandToRetry = GetLiteralSql(cmdRow);
 
                 int rowCount = cmdRow.ExecuteNonQuery();
 
@@ -284,6 +382,52 @@ namespace ConsolidationEngine.Repository
                 //logger.LogError(ex, "[UPSERT] Error ejecutando MERGE individual para SourceKey={Key}", row["SourceKey"]);
                 throw;
             }
+        }
+
+        private static string GetLiteralSql(SqlCommand cmd)
+        {
+            string sql = cmd.CommandText;
+
+            foreach (SqlParameter p in cmd.Parameters)
+            {
+                string literal;
+
+                if (p.Value == DBNull.Value || p.Value == null)
+                {
+                    literal = "NULL";
+                }
+                else if (p.Value is string s)
+                {
+                    literal = $"'{s.Replace("'", "''")}'";
+                }
+                else if (p.Value is DateTime dt)
+                {
+                    // formato compatible con SQL Server
+                    literal = $"'{dt:yyyy-MM-dd HH:mm:ss.fff}'";
+                }
+                else if (p.Value is bool b)
+                {
+                    literal = b ? "1" : "0";
+                }
+                else if (p.Value is byte[] bytes)
+                {
+                    // convertir binarios a formato hexadecimal 0x...
+                    literal = "0x" + BitConverter.ToString(bytes).Replace("-", "");
+                }
+                else
+                {
+                    // números, decimales, etc.
+                    literal = Convert.ToString(p.Value, System.Globalization.CultureInfo.InvariantCulture);
+                }
+
+                // Reemplazar solo coincidencias exactas del nombre del parámetro (con borde de palabra)
+                sql = Regex.Replace(
+                    sql,
+                    $@"(?<!\w){Regex.Escape(p.ParameterName)}(?!\w)",
+                    literal);
+            }
+
+            return sql;
         }
 
         public int DeleteBatch(SqlConnection cnx, DataRow[] rows)

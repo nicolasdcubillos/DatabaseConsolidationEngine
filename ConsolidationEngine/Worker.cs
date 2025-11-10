@@ -13,7 +13,7 @@ public class Worker : BackgroundService
     private readonly IConfiguration _config;
     private readonly ChangeTrackingOrchestator consolidationOrchestator;
     private readonly FaultRetryProcessor retryProcessor;
-    private readonly SqlConnectionChecker connectionChecker;
+    private readonly SqlSchemaValidator schemaValidator;
     private readonly ConsolidationSettings settings;
     private readonly int _heartbeat;
 
@@ -29,7 +29,7 @@ public class Worker : BackgroundService
         settings = config.GetSection("ConsolidationEngine").Get<ConsolidationSettings>() ?? new ConsolidationSettings();
 
         consolidationOrchestator = new ChangeTrackingOrchestator(settings, _logger);
-        connectionChecker = new SqlConnectionChecker(settings, _logger);
+        schemaValidator = new SqlSchemaValidator(settings, _logger);
         retryProcessor = new FaultRetryProcessor(settings, _logger);
 
         SqlConnectionBuilder.Instance.Configure(settings.Server, settings.User, settings.Password);
@@ -37,19 +37,19 @@ public class Worker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        bool connectionsChecked = false;
+        bool schemaValidated = false;
 
         try
         {
-            connectionChecker.ValidateConnections();
-            connectionsChecked = true;
+            schemaValidator.Validate();
+            schemaValidated = true;
         }
         catch (DatabaseConnectionValidatorError ex)
         {
             _logger.LogError(ex, "Error de conexión a la base de datos {Db}", ex.DatabaseName);
         }
 
-        if (connectionsChecked)
+        if (schemaValidated)
         {
             while (!stoppingToken.IsCancellationRequested)
             {

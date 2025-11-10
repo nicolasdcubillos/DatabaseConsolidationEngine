@@ -1,9 +1,9 @@
-USE BOGOTA;
+USE PASTO;
 GO
 
 DECLARE @lote INT = 1;
-DECLARE @totalLotes INT = 5; 
-DECLARE @cantidadLote INT = 20; 
+DECLARE @totalLotes INT = 20; 
+DECLARE @cantidadLote INT = 15; 
 DECLARE @i INT;
 
 WHILE @lote <= @totalLotes
@@ -44,7 +44,7 @@ BEGIN
             GETDATE(),                                 -- FECING
             GETDATE(),                                 -- FECMOD
             0,                                         -- NIIF
-            '900141348-7',                              -- NIT (asegúrate que existe en NIT)
+            '900141112-4',                              -- NIT - NO EXISTE EN CONSOLIDADA
             '',                                        -- NITCONTRAT
             'Sin observación',                         -- NOTA
             'usuario_in',                              -- PASSWORDIN

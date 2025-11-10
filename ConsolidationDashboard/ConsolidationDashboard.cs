@@ -5,6 +5,7 @@ using System.Configuration;
 using System.Data.SqlClient;
 using System.Linq;
 using System.ComponentModel;
+using System.Data;
 
 namespace ConsolidationDashboard
 {
@@ -117,7 +118,7 @@ namespace ConsolidationDashboard
             string connStr = ConfigurationManager.ConnectionStrings["ConsolidationDb"].ConnectionString;
             var data = new List<dynamic>();
             using (var conn = new SqlConnection(connStr))
-            using (var cmd = new SqlCommand("SELECT Id, SourceDatabase, TableName, ErrorMessage, CreatedAt FROM dbo.ConsolidationEngineErrorsView", conn))
+            using (var cmd = new SqlCommand("SELECT * FROM dbo.ConsolidationEngineErrorsView", conn))
             {
                 conn.Open();
                 using (var reader = cmd.ExecuteReader())
@@ -129,7 +130,7 @@ namespace ConsolidationDashboard
                             ID = reader["ID"],
                             SourceDatabase = reader["SourceDatabase"].ToString(),
                             TableName = reader["TableName"].ToString(),
-                            ErrorMessage = reader["ErrorMessage"].ToString(),
+                            ErrorMessage = reader["ErrorDetails"].ToString(),
                             CreatedAt = reader["CreatedAt"] == DBNull.Value ? "" : reader["CreatedAt"].ToString()
                         });
                     }
@@ -138,7 +139,6 @@ namespace ConsolidationDashboard
             DetalleErroresGrid.DataSource = null;
             DetalleErroresGrid.Rows.Clear();
             DetalleErroresGrid.Columns.Clear();
-            DetalleErroresGrid.Columns.Add(new DataGridViewCheckBoxColumn() { Name = "Seleccionar", HeaderText = "", Width = 40 });
             DetalleErroresGrid.Columns.Add("SourceDatabase", "Base de datos");
             DetalleErroresGrid.Columns.Add("TableName", "Tabla");
             DetalleErroresGrid.Columns.Add("ErrorMessage", "Error");
@@ -147,7 +147,7 @@ namespace ConsolidationDashboard
             DetalleErroresGrid.Columns["ID"].Visible = false;
             foreach (var item in data)
             {
-                DetalleErroresGrid.Rows.Add(false, item.SourceDatabase, item.TableName, item.ErrorMessage, item.CreatedAt, item.ID);
+                DetalleErroresGrid.Rows.Add(item.SourceDatabase, item.TableName, item.ErrorMessage, item.CreatedAt, item.ID);
             }
         }
 
@@ -220,37 +220,45 @@ namespace ConsolidationDashboard
 
         private void DetalleErroresGrid_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
-            if (e.ColumnIndex == DetalleErroresGrid.Columns["Seleccionar"].Index && e.RowIndex >= 0)
-            {
-                DetalleErroresGrid.Rows[e.RowIndex].Cells["Seleccionar"].Value = !(DetalleErroresGrid.Rows[e.RowIndex].Cells["Seleccionar"].Value is bool b && b);
-            }
+            // Previously toggled checkbox selection. No longer needed since we retry all errors with a button.
         }
 
-        private void RetrySelectedErrors()
+        private void RetryAllErrors()
         {
             string connStr = ConfigurationManager.ConnectionStrings["ConsolidationDb"].ConnectionString;
             using (var conn = new SqlConnection(connStr))
+            using (var cmd = new SqlCommand("dbo.ConsolidationEngineRetryAll", conn))
             {
+                cmd.CommandType = CommandType.StoredProcedure;
                 conn.Open();
-                foreach (DataGridViewRow row in DetalleErroresGrid.Rows)
-                {
-                    if (row.Cells["Seleccionar"].Value is bool selected && selected)
-                    {
-                        var id = row.Cells["ID"].Value;
-                        using (var cmd = new SqlCommand($"UPDATE dbo.ConsolidationEngineErrors SET Retry = 1, RetryCount = RetryCount + 1 WHERE ID = @ID", conn))
-                        {
-                            cmd.Parameters.AddWithValue("@ID", id);
-                            cmd.ExecuteNonQuery();
-                        }
-                    }
-                }
+                cmd.ExecuteNonQuery();
             }
             LoadErrorDetails();
         }
 
         private void btnRetryErrors_Click(object sender, EventArgs e)
         {
-            RetrySelectedErrors();
+            RetryAllErrors();
+        }
+
+        private void btnActualizar_Click(object sender, EventArgs e)
+        {
+            // Disable button to prevent re-entrancy
+            btnActualizar.Enabled = false;
+            // Stop automatic refresh while performing manual update
+            refreshTimer.Stop();
+            try
+            {
+                LoadSyncStatus();
+                LoadErrorDetails();
+                LoadLogs();
+                UpdatePieChart();
+            }
+            finally
+            {
+                refreshTimer.Start();
+                btnActualizar.Enabled = true;
+            }
         }
 
         private void GeneralDashboard_CellContentClick(object sender, DataGridViewCellEventArgs e)
