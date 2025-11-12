@@ -33,7 +33,7 @@ namespace ConsolidationEngine.ChangeTracking
                     {
                         try
                         {
-                            _logger.LogInformation("[ORCHESTRATOR] Iniciando job {key}", key);
+                            //_logger.LogInformation("[ORCHESTRATOR] Iniciando job {key}", key);
 
                             ChangeTrackingETL etl = new ChangeTrackingETL(
                                 server: _settings.Server,
@@ -45,6 +45,7 @@ namespace ConsolidationEngine.ChangeTracking
                                 keyCol: table.KeyColumn,
                                 skipPrimaryKey: table.SkipPrimaryKey,
                                 batchSize: _settings.BatchSize,
+                                upsertBatchWithFallbackTimeoutSeconds: _settings.UpsertBatchWithFallbackTimeoutSeconds,
                                 logger: _logger
                             );
 

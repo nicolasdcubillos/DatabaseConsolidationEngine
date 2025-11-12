@@ -61,6 +61,7 @@ SELECT TOP (25)
     ce.ErrorDetails,
     ce.CreatedAt
 FROM CONSOLIDADA.dbo.ConsolidationEngineErrors ce
+WHERE ce.Retry != 2
 ORDER BY ce.CreatedAt DESC;
 GO
 

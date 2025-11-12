@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace ConsolidationEngine.Repository
 {
@@ -22,6 +23,7 @@ namespace ConsolidationEngine.Repository
         private readonly ILogger _logger;
         private readonly DualLogger _dualLogger;
         private readonly bool _skipPrimaryKey;
+        private readonly int _upsertBatchWithFallbackTimeoutSeconds;
 
         public SqlConsolidationHelper(
             string server,
@@ -31,6 +33,7 @@ namespace ConsolidationEngine.Repository
             string keyCol,
             int batchSize,
             bool skipPrimaryKey,
+            int upsertBatchWithFallbackTimeoutSeconds,
             ILogger logger)
         {
             _server = server;
@@ -42,6 +45,7 @@ namespace ConsolidationEngine.Repository
             _logger = logger;
             _dualLogger = new DualLogger(logger);
             _skipPrimaryKey = skipPrimaryKey;
+            _upsertBatchWithFallbackTimeoutSeconds = upsertBatchWithFallbackTimeoutSeconds;
         }
 
         public long GetCurrentVersion(SqlConnection cnx)
@@ -119,6 +123,10 @@ namespace ConsolidationEngine.Repository
         {
             using SqlConnection cnx = SqlConnectionBuilder.Instance.CreateConnection(targetDb);
             cnx.Open();
+            string mergeSqlForLog = null;
+
+            using (var dateCmd = new SqlCommand("SET DATEFORMAT ymd;", cnx))
+                dateCmd.ExecuteNonQuery();
 
             int rowsAffected = 0;
 
@@ -193,28 +201,45 @@ namespace ConsolidationEngine.Repository
 
             // Merge
 
-            var mergeSql = $@"
+            var joinCondition = _skipPrimaryKey
+                ? "TARGET.SourceKey = SRC.SourceKey"
+                : $"TARGET.{_keyCol} = SRC.{_keyCol}";
+
+            string mergeSql = $@"
                 MERGE {_table} AS TARGET
                 USING #stage AS SRC
-                ON TARGET.SourceKey = SRC.SourceKey
+                ON {joinCondition}
                 WHEN MATCHED THEN
                     UPDATE SET {setClause}
                 WHEN NOT MATCHED BY TARGET THEN
                     INSERT ({insertCols})
                     VALUES ({insertValues});
-                    SELECT @@ROWCOUNT;";
+                SELECT @@ROWCOUNT;";
 
             try
             {
                 using (var cmd = new SqlCommand(mergeSql, cnx))
                 {
+                    mergeSqlForLog = GetLiteralSql(cmd);
+                    cmd.CommandTimeout = _upsertBatchWithFallbackTimeoutSeconds;
                     rowsAffected = (int)cmd.ExecuteScalar();
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 string singleMerge = null;
-                _logger.LogWarning("[UPSERT] MERGE falló, procesando fila por fila para capturar errores.");
+
+                _dualLogger.LogError(
+                            "",
+                            _originDb,
+                            _table,
+                            "UpsertBatchWithFallback",
+                            ex.GetType().ToString(),
+                            ex.Message,
+                            mergeSqlForLog ?? "",
+                            "0",
+                            _targetDb
+                        );
 
                 foreach (DataRow row in tempTable.Rows)
                 {
@@ -235,6 +260,8 @@ namespace ConsolidationEngine.Repository
                             row: row,
                             onWatermarkUpdated: version => SetWatermark(cnx, version),
                             logger: _logger,
+                            skipPrimaryKey: _skipPrimaryKey,
+                            keyCol: _keyCol,
                             out singleMerge
                         );
 
@@ -242,13 +269,19 @@ namespace ConsolidationEngine.Repository
                     }
                     catch (Exception exRow)
                     {
+                        string fullMessage = exRow.Message;
+                        if (exRow.InnerException != null)
+                        {
+                            fullMessage += $" | Inner: {exRow.InnerException.Message}";
+                        }
+
                         _dualLogger.LogError(
                             row["SourceKey"]?.ToString(),
                             _originDb,
                             _table,
                             "IndividualMerge",
                             exRow.GetType().ToString(),
-                            exRow.Message,
+                            fullMessage,
                             singleMerge ?? "",
                             "0",
                             _targetDb
@@ -341,12 +374,22 @@ namespace ConsolidationEngine.Repository
            DataRow row,
            Action<long>? onWatermarkUpdated,
            ILogger logger,
+           bool skipPrimaryKey,
+           string keyCol,
            out string sqlCommandToRetry)
         {
+            using (var dateCmd = new SqlCommand("SET DATEFORMAT ymd;", cnx))
+                dateCmd.ExecuteNonQuery();
+
+            var joinCondition = skipPrimaryKey
+                ? "TARGET.SourceKey = SRC.SourceKey"
+                : $"TARGET.{keyCol} = SRC.{keyCol}";
+
+
             string singleMerge = $@"
             MERGE {tableName} AS TARGET
             USING (SELECT {string.Join(",", allCols.Select(c => $"@{c} AS {c}"))}) AS SRC
-            ON TARGET.SourceKey = SRC.SourceKey
+            ON {joinCondition}
             WHEN MATCHED THEN
                 UPDATE SET {setClause}
             WHEN NOT MATCHED BY TARGET THEN
@@ -384,7 +427,7 @@ namespace ConsolidationEngine.Repository
             }
         }
 
-        private static string GetLiteralSql(SqlCommand cmd)
+        internal static string GetLiteralSql(SqlCommand cmd)
         {
             string sql = cmd.CommandText;
 

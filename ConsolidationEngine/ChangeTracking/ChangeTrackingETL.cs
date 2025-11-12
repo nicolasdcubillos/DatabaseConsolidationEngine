@@ -11,7 +11,6 @@ namespace ConsolidationEngine.ChangeTracking
         private readonly string _originDb;
         private readonly string _targetDb;
         private readonly string _table;
-        private readonly bool _skipPrimaryKey;
 
         public ChangeTrackingETL(
             string server,
@@ -23,15 +22,15 @@ namespace ConsolidationEngine.ChangeTracking
             string keyCol,
             bool skipPrimaryKey,
             int batchSize,
+            int upsertBatchWithFallbackTimeoutSeconds,
             ILogger logger)
         {
-            sqlConsolidationHelper = new SqlConsolidationHelper(server, originDb, targetDb, table, keyCol, batchSize, skipPrimaryKey, logger);
+            sqlConsolidationHelper = new SqlConsolidationHelper(server, originDb, targetDb, table, keyCol, batchSize, skipPrimaryKey, upsertBatchWithFallbackTimeoutSeconds, logger);
             _logger = logger;
             _dualLogger = new DualLogger(logger);
             _originDb = originDb;
             _targetDb = targetDb;
             _table = table;
-            _skipPrimaryKey = skipPrimaryKey;
         }
 
         public void Run()
@@ -72,7 +71,7 @@ namespace ConsolidationEngine.ChangeTracking
 
             if (fromVersion == toVersion)
             {
-                _dualLogger.Log(LogLevel.Information, $"[OK] {_originDb}->{_targetDb} Tabla={_table} | Sin cambios. Watermark -> {toVersion}", _originDb, _targetDb, _table);
+                //_dualLogger.Log(LogLevel.Information, $"[OK] {_originDb}->{_targetDb} Tabla={_table} | Sin cambios. Watermark -> {toVersion}", _originDb, _targetDb, _table);
                 return;
             }
 

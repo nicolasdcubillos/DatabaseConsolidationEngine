@@ -115,6 +115,9 @@ namespace ConsolidationEngine.FaultRetry
                     CommandTimeout = 120 // opcional, por si el query tarda
                 };
 
+                using (var dateCmd = new SqlCommand("SET DATEFORMAT ymd;", cnx))
+                    dateCmd.ExecuteNonQuery();
+
                 var rows = await cmd.ExecuteNonQueryAsync();
 
                 _logger.LogInformation("[FaultRetryProcessor] Retry successful for ErrorId={id} (RowsAffected={rows})", id, rows);
@@ -134,8 +137,6 @@ namespace ConsolidationEngine.FaultRetry
             {
                 _logger.LogError(ex, "[FaultRetryProcessor] Retry failed for ErrorId={id} in {database}", id, database);
             }
-
-            _logger.LogInformation("[FaultRetryProcessor] Retry completed for ErrorId={id} in {database}", id, database);
         }
 
 

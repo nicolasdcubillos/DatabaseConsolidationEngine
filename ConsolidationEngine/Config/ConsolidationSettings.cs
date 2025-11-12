@@ -4,6 +4,7 @@
     {
         public string Server { get; set; }
         public int BatchSize { get; set; }
+        public int UpsertBatchWithFallbackTimeoutSeconds { get; set; }
         public string User { get; set; }
         public string Password { get; set; }
         public List<DatabasePairConfig> Databases { get; set; } = new();
