@@ -104,7 +104,7 @@ namespace ConsolidationEngine.Repository
                 IF @from < @min
                     RAISERROR('WATERMARK_TOO_OLD', 16, 1);
 
-                SELECT ct.SYS_CHANGE_VERSION, ct.SYS_CHANGE_OPERATION, s.*
+                SELECT ct.SYS_CHANGE_VERSION, ct.SYS_CHANGE_OPERATION, ct.{_keyCol} AS CT_KEYCOL, s.*
                 FROM CHANGETABLE(CHANGES {_table}, @from) AS ct
                 LEFT JOIN {_table} AS s ON s.{_keyCol} = ct.{_keyCol}
                 WHERE ct.SYS_CHANGE_VERSION <= {toVersion}
@@ -136,7 +136,7 @@ namespace ConsolidationEngine.Repository
 
             var allCols = rows[0].Table.Columns
                 .Cast<DataColumn>()
-                .Where(c => c.ColumnName != "SYS_CHANGE_VERSION" && c.ColumnName != "SYS_CHANGE_OPERATION")
+                .Where(c => c.ColumnName != "SYS_CHANGE_VERSION" && c.ColumnName != "SYS_CHANGE_OPERATION" && c.ColumnName != "CT_KEYCOL")
                 .Select(c => c.ColumnName)
                 .ToList();
 
@@ -473,42 +473,83 @@ namespace ConsolidationEngine.Repository
             return sql;
         }
 
+        private static string GetSqlType(Type type)
+        {
+            if (type == typeof(long)) return "BIGINT";
+            if (type == typeof(int)) return "INT";
+            if (type == typeof(Guid)) return "UNIQUEIDENTIFIER";
+            if (type == typeof(string)) return "NVARCHAR(200)";
+
+            throw new NotSupportedException(
+                $"Primary key type '{type.Name}' is not supported");
+        }
+
         public int DeleteBatch(SqlConnection cnx, DataRow[] rows)
         {
-            int rowsAffected = 0;
+            if (rows == null || rows.Length == 0)
+                return 0;
 
-            if (rows.Length == 0) return 0;
+            // 1. Obtener el tipo real de la PK desde el DataTable (ct.{keyCol})
+            var pkColumn = rows[0].Table.Columns["CT_KEYCOL"];
+            var pkType = pkColumn.DataType;
 
-            using var cmd = new SqlCommand("", cnx);
+            // 2. Crear DataTable con las PKs
+            var dtKeys = new DataTable();
+            dtKeys.Columns.Add("k", pkType);
 
-            var keys = new List<string>();
             foreach (var row in rows)
             {
-                keys.Add(row[_keyCol].ToString());
+                if (row["CT_KEYCOL"] == DBNull.Value)
+                    throw new InvalidOperationException("DELETE change without PK");
+
+                dtKeys.Rows.Add(row["CT_KEYCOL"]);
             }
 
-            var sql = @"
-            IF OBJECT_ID('tempdb..#del') IS NOT NULL DROP TABLE #del;
-            CREATE TABLE #del (k NVARCHAR(40) NOT NULL);";
+            using var cmd = new SqlCommand();
+            cmd.Connection = cnx;
+            cmd.CommandType = CommandType.Text;
 
-            cmd.CommandText = sql;
+            // 3. Crear tabla temporal con el TIPO CORRECTO
+            string sqlPkType = GetSqlType(pkType);
+
+            cmd.CommandText = $@"
+                IF OBJECT_ID('tempdb..#del') IS NOT NULL DROP TABLE #del;
+                CREATE TABLE #del (
+                    k {sqlPkType} NOT NULL
+                );";
             cmd.ExecuteNonQuery();
 
-            using var bulkCopy = new SqlBulkCopy(cnx)
+            // 4. Bulk insert de las PKs
+            using (var bulkCopy = new SqlBulkCopy(cnx))
             {
-                DestinationTableName = "#del",
-                BatchSize = _batchSize
-            };
+                bulkCopy.DestinationTableName = "#del";
+                bulkCopy.BatchSize = _batchSize;
+                bulkCopy.WriteToServer(dtKeys);
+            }
 
-            var dtKeys = new DataTable();
-            dtKeys.Columns.Add("k", typeof(string));
-            foreach (var k in keys)
-                dtKeys.Rows.Add(k);
+            // 5. DELETE según estrategia
+            cmd.Parameters.Clear();
 
-            bulkCopy.WriteToServer(dtKeys);
+            if (_skipPrimaryKey)
+            {
+                cmd.CommandText = $@"
+                DELETE T
+                FROM {_table} AS T
+                INNER JOIN #del AS D
+                    ON T.SourceKey = CONCAT(@OriginDb, '_', D.k);";
 
-            cmd.CommandText = $"DELETE T FROM {_table} T INNER JOIN #del D ON T.{_keyCol}=D.k;";
-            rowsAffected = cmd.ExecuteNonQuery();
+                cmd.Parameters.Add("@OriginDb", SqlDbType.NVarChar, 50).Value = _originDb;
+            }
+            else
+            {
+                cmd.CommandText = $@"
+                    DELETE T
+                    FROM {_table} AS T
+                    INNER JOIN #del AS D
+                        ON T.{_keyCol} = D.k;";
+            }
+
+            int rowsAffected = cmd.ExecuteNonQuery();
 
             return rowsAffected;
         }
