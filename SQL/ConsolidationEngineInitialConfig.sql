@@ -49,7 +49,7 @@ END;
 GO
 
 -------------------------------------------------------------------
--- 2. Crear vistas de errores y estado de consolidación
+-- 2. Crear vistas de errores y estado de consolidaciï¿½n
 -------------------------------------------------------------------
 
 CREATE OR ALTER VIEW dbo.ConsolidationEngineErrorsView
@@ -100,10 +100,12 @@ BEGIN
         UltimoError datetime2
     );
 
+    -- Bug fix: removed hardcoded WHERE TableName = 'dbo.MVTONIIF'.
+    -- Iterate over all source databases registered across any table so that
+    -- databases tracked only on other tables are not reported as "Sin consolidar".
     DECLARE dbs CURSOR FOR
     SELECT DISTINCT SourceDB
-    FROM CONSOLIDADA.dbo.ConsolidationEngineWatermark
-    WHERE TableName = 'dbo.MVTONIIF'; -- Solo considerar esta tabla
+    FROM CONSOLIDADA.dbo.ConsolidationEngineWatermark;
 
     OPEN dbs;
     FETCH NEXT FROM dbs INTO @db;
@@ -114,35 +116,31 @@ BEGIN
         USE ' + QUOTENAME(@db) + N';
         DECLARE @localVersion bigint = CHANGE_TRACKING_CURRENT_VERSION();
         USE CONSOLIDADA;
+        -- Bug fix: use MIN(LastVersion) across all tables for this source DB.
+        -- A DB is fully synced only when every tracked table is caught up;
+        -- taking the minimum gives the most conservative (correct) view.
+        DECLARE @consolidadaVersion bigint = (
+            SELECT MIN(LastVersion)
+            FROM CONSOLIDADA.dbo.ConsolidationEngineWatermark
+            WHERE SourceDB = N''' + @db + N'''
+        );
         INSERT INTO #result
         SELECT
             N''' + @db + N''' AS SourceDB,
             @localVersion AS LocalVersion,
-            (SELECT MAX(LastVersion)
-             FROM CONSOLIDADA.dbo.ConsolidationEngineWatermark
-             WHERE SourceDB = N''' + @db + N''' AND TableName = ''dbo.MVTONIIF'') AS ConsolidadaVersion,
+            @consolidadaVersion AS ConsolidadaVersion,
             CASE
-                WHEN (SELECT MAX(LastVersion)
-                      FROM CONSOLIDADA.dbo.ConsolidationEngineWatermark
-                      WHERE SourceDB = N''' + @db + N''' AND TableName = ''dbo.MVTONIIF'') IS NULL THEN ''Sin consolidar''
-                WHEN @localVersion =
-                     (SELECT MAX(LastVersion)
-                      FROM CONSOLIDADA.dbo.ConsolidationEngineWatermark
-                      WHERE SourceDB = N''' + @db + N''' AND TableName = ''dbo.MVTONIIF'') THEN ''Sincronizada''
-                WHEN @localVersion <
-                     (SELECT MAX(LastVersion)
-                      FROM CONSOLIDADA.dbo.ConsolidationEngineWatermark
-                      WHERE SourceDB = N''' + @db + N''' AND TableName = ''dbo.MVTONIIF'') THEN ''Desactualizada''
-                WHEN @localVersion >
-                     (SELECT MAX(LastVersion)
-                      FROM CONSOLIDADA.dbo.ConsolidationEngineWatermark
-                      WHERE SourceDB = N''' + @db + N''' AND TableName = ''dbo.MVTONIIF'') THEN ''Pendiente''
+                WHEN @consolidadaVersion IS NULL THEN ''Sin consolidar''
+                WHEN @localVersion = @consolidadaVersion THEN ''Sincronizada''
+                WHEN @localVersion < @consolidadaVersion THEN ''Desactualizada''
+                WHEN @localVersion > @consolidadaVersion THEN ''Pendiente''
                 ELSE ''Error''
             END AS Estado,
-            ISNULL((SELECT COUNT(*) FROM CONSOLIDADA.dbo.ConsolidationEngineErrors 
-                    WHERE SourceDatabase = N''' + @db + N''' AND TableName = ''dbo.MVTONIIF'' AND Retry != 2), 0) AS Errores,
-            (SELECT MAX(CreatedAt) FROM CONSOLIDADA.dbo.ConsolidationEngineErrors 
-             WHERE SourceDatabase = N''' + @db + N''' AND TableName = ''dbo.MVTONIIF'') AS UltimoError;
+            -- Bug fix: aggregate errors across all tables, not just one hardcoded table.
+            ISNULL((SELECT COUNT(*) FROM CONSOLIDADA.dbo.ConsolidationEngineErrors
+                    WHERE SourceDatabase = N''' + @db + N''' AND Retry != 2), 0) AS Errores,
+            (SELECT MAX(CreatedAt) FROM CONSOLIDADA.dbo.ConsolidationEngineErrors
+             WHERE SourceDatabase = N''' + @db + N''') AS UltimoError;
         ';
 
         EXEC sys.sp_executesql @sql;
@@ -202,7 +200,7 @@ BEGIN
     SET @sql = '
     USE ' + QUOTENAME(@db) + ';
 
-    -- Habilitar Change Tracking a nivel de BD si no está
+    -- Habilitar Change Tracking a nivel de BD si no estï¿½
     IF NOT EXISTS (
         SELECT 1 FROM sys.change_tracking_databases WHERE database_id = DB_ID()
     )
@@ -212,7 +210,7 @@ BEGIN
         (CHANGE_RETENTION = 7 DAYS, AUTO_CLEANUP = ON);
     END;
 
-    -- Habilitar Change Tracking en la tabla indicada si no está
+    -- Habilitar Change Tracking en la tabla indicada si no estï¿½
     IF NOT EXISTS (
         SELECT 1 FROM sys.change_tracking_tables WHERE object_id = OBJECT_ID(''' 
             + QUOTENAME(@schema) + '.' + QUOTENAME(@table) + ''')
@@ -222,7 +220,7 @@ BEGIN
         ENABLE CHANGE_TRACKING WITH (TRACK_COLUMNS_UPDATED = OFF);
     END;
 
-    -- Obtener versión actual de Change Tracking en esta BD
+    -- Obtener versiï¿½n actual de Change Tracking en esta BD
     DECLARE @cur BIGINT;
     SELECT @cur = CHANGE_TRACKING_CURRENT_VERSION();
 

@@ -62,11 +62,11 @@ namespace ConsolidationEngine.ChangeTracking
             long minValidVersion = sqlConsolidationHelper.GetMinValidVersion(cnxOrigin);
             if (fromVersion < minValidVersion)
             {
+                // Bug fix: watermark has expired (CT history purged). Fast-forward and stop this cycle
+                // to avoid FetchChanges raising WATERMARK_TOO_OLD with the stale fromVersion.
+                _dualLogger.Log(LogLevel.Warning, $"[CHANGE TRACKING ETL] WATERMARK EXPIRADO: Watermark {fromVersion} < MIN_VALID_VERSION {minValidVersion}. Avanzando a {toVersion}. Origen={_originDb}, Destino={_targetDb}, Tabla={_table}", _originDb, _targetDb, _table);
                 sqlConsolidationHelper.SetWatermark(cnxTarget, toVersion);
-                /*
-                throw new Exception(
-                    $"[CHANGE TRACKING ETL] WATERMARK MISMATCH: Watermark {fromVersion} < MIN_VALID_VERSION {minValidVersion}. Requiere reinicialización. Origen={_originDb}, Destino={_targetDb}, Tabla={_table}"
-                );*/
+                return;
             }
 
             if (fromVersion == toVersion)
@@ -92,20 +92,22 @@ namespace ConsolidationEngine.ChangeTracking
 
             var insUpd = changes.Select("SYS_CHANGE_OPERATION IN ('I','U')");
             int rowsUpserted = sqlConsolidationHelper.UpsertBatchWithFallback(_targetDb, insUpd);
-            if (rowsUpserted != 0 && rowsUpserted != insUpd.Length)
+            // Bug fix: previous condition (rowsUpserted != 0 && ...) silently swallowed a zero-rows result.
+            // Bug fix: removed premature SetWatermark here; the single call at the end is the only one that
+            //          should advance the watermark, so a partial upsert is not mis-reported as committed.
+            if (insUpd.Length > 0 && rowsUpserted != insUpd.Length)
             {
                 _dualLogger.Log(LogLevel.Warning, $"[CHANGE TRACKING ETL] UPSERT: Se esperaba procesar {insUpd.Length} filas pero MERGE afectó {rowsUpserted}", _originDb, _targetDb, _table);
-                sqlConsolidationHelper.SetWatermark(cnxTarget, toVersion);
             }
 
             // Delete
 
             var delRows = changes.Select("SYS_CHANGE_OPERATION = 'D'");
             int rowsDeleted = sqlConsolidationHelper.DeleteBatch(cnxTarget, delRows);
-            if (rowsDeleted != 0 && rowsDeleted != delRows.Length)
+            // Bug fix: same corrections applied — zero case covered, premature SetWatermark removed.
+            if (delRows.Length > 0 && rowsDeleted != delRows.Length)
             {
                 _dualLogger.Log(LogLevel.Warning, $"[CHANGE TRACKING ETL] DELETE: Se esperaba procesar {delRows.Length} filas pero afectó {rowsDeleted}", _originDb, _targetDb, _table);
-                sqlConsolidationHelper.SetWatermark(cnxTarget, toVersion);
             }
 
             sqlConsolidationHelper.SetWatermark(cnxTarget, toVersion);

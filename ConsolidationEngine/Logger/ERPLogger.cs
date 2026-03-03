@@ -30,7 +30,14 @@ namespace ConsolidationEngine.Logger
                 { "CreatedAt", DateTime.UtcNow }
             };
 
-            SqlRepository.InsertAsync("ConsolidationEngineErrors", data, targetDatabase).GetAwaiter().GetResult();
+            // Bug fix: .GetAwaiter().GetResult() blocks a thread-pool thread per log write and can
+            // cause starvation under high replication load. Fire-and-forget on an independent Task
+            // eliminates the blocking and any SynchronizationContext deadlock risk.
+            _ = Task.Run(async () =>
+            {
+                try { await SqlRepository.InsertAsync("ConsolidationEngineErrors", data, targetDatabase); }
+                catch { /* Logging must never crash the engine; swallow insert failures silently. */ }
+            });
         }
 
         public static void Log(
@@ -53,7 +60,12 @@ namespace ConsolidationEngine.Logger
                 { "CreatedAt", DateTime.UtcNow }
             };
 
-            SqlRepository.InsertAsync("ConsolidationEngineLogs", data, targetDatabase).GetAwaiter().GetResult();
+            // Bug fix: same fire-and-forget pattern as LogError.
+            _ = Task.Run(async () =>
+            {
+                try { await SqlRepository.InsertAsync("ConsolidationEngineLogs", data, targetDatabase); }
+                catch { /* Swallow silently — log pipeline must not propagate exceptions. */ }
+            });
         }
     }
 }
