@@ -1,0 +1,4 @@
+Notas despliegue maristas.
+
+1. Migración inicial de las tablas marcadas. Pendiente agregar cuentasnif
+2. SET DATEFORMAT ymd;
