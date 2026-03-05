@@ -5,7 +5,12 @@ IHostBuilder builder = Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration((hostingContext, config) =>
     {
         config.Sources.Clear();
+        
+        var env = hostingContext.HostingEnvironment;
+        
+        // Cargar archivos de configuración según el entorno
         config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+        config.AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: true);
     })
     .ConfigureServices((hostContext, services) =>
     {

@@ -24,6 +24,7 @@ namespace ConsolidationEngine.Repository
         private readonly DualLogger _dualLogger;
         private readonly bool _skipPrimaryKey;
         private readonly int _upsertBatchWithFallbackTimeoutSeconds;
+        private readonly string _rowFilter;
 
         public SqlConsolidationHelper(
             string server,
@@ -34,7 +35,8 @@ namespace ConsolidationEngine.Repository
             int batchSize,
             bool skipPrimaryKey,
             int upsertBatchWithFallbackTimeoutSeconds,
-            ILogger logger)
+            ILogger logger,
+            string rowFilter = null)
         {
             _server = server;
             _originDb = originDb;
@@ -46,6 +48,7 @@ namespace ConsolidationEngine.Repository
             _dualLogger = new DualLogger(logger);
             _skipPrimaryKey = skipPrimaryKey;
             _upsertBatchWithFallbackTimeoutSeconds = upsertBatchWithFallbackTimeoutSeconds;
+            _rowFilter = rowFilter;
         }
 
         public long GetCurrentVersion(SqlConnection cnx)
@@ -96,9 +99,17 @@ namespace ConsolidationEngine.Repository
             cmd.ExecuteNonQuery();
         }
 
-        public DataTable FetchChanges(SqlConnection cnx, long fromVersion, long toVersion)
+        public FetchResult FetchChanges(SqlConnection cnx, long fromVersion, long toVersion)
         {
-            var sql = $@"
+            // Si hay un RowFilter definido, se agrega como condición adicional en el WHERE.
+            // Se usa "s" como alias de la tabla origen; el filtro debe respetar ese alias.
+            // Para eliminaciones (D), s.* es NULL por el LEFT JOIN, por eso se deja pasar
+            // siempre con la condición OR 'D', evitando que las DELETEs queden bloqueadas.
+            var rowFilterClause = !string.IsNullOrWhiteSpace(_rowFilter)
+                ? $"AND (ct.SYS_CHANGE_OPERATION = 'D' OR ({_rowFilter}))"
+                : string.Empty;
+
+            var sqlFiltered = $@"
                 DECLARE @from BIGINT = @fromVersion;
                 DECLARE @min BIGINT = CHANGE_TRACKING_MIN_VALID_VERSION(OBJECT_ID('{_table}'));
                 IF @from < @min
@@ -108,15 +119,32 @@ namespace ConsolidationEngine.Repository
                 FROM CHANGETABLE(CHANGES {_table}, @from) AS ct
                 LEFT JOIN {_table} AS s ON s.{_keyCol} = ct.{_keyCol}
                 WHERE ct.SYS_CHANGE_VERSION <= {toVersion}
+                {rowFilterClause}
                 ORDER BY ct.SYS_CHANGE_VERSION, ct.{_keyCol};";
 
-            using var cmd = new SqlCommand(sql, cnx);
+            using var cmd = new SqlCommand(sqlFiltered, cnx);
             cmd.Parameters.AddWithValue("@fromVersion", fromVersion);
 
             using var da = new SqlDataAdapter(cmd);
             var dt = new DataTable();
             da.Fill(dt);
-            return dt;
+
+            // Sin RowFilter: el total coincide exactamente con lo retornado, sin viaje extra a la BD.
+            if (string.IsNullOrWhiteSpace(_rowFilter))
+                return new FetchResult { ChangedRows = dt, TotalChangesInRange = dt.Rows.Count };
+
+            // Con RowFilter activo: consulta liviana de COUNT para saber cuántos cambios hubo
+            // en el rango antes del filtro. Solo se usa para logging, no impacta el procesamiento.
+            var sqlCount = $@"
+                SELECT COUNT(*)
+                FROM CHANGETABLE(CHANGES {_table}, @fromVersion) AS ct
+                WHERE ct.SYS_CHANGE_VERSION <= {toVersion};";
+
+            using var countCmd = new SqlCommand(sqlCount, cnx);
+            countCmd.Parameters.AddWithValue("@fromVersion", fromVersion);
+            int totalInRange = (int)countCmd.ExecuteScalar();
+
+            return new FetchResult { ChangedRows = dt, TotalChangesInRange = totalInRange };
         }
 
         public int UpsertBatchWithFallback(string targetDb, DataRow[] rows)
@@ -409,7 +437,7 @@ namespace ConsolidationEngine.Repository
 
                 if (rowCount < 1)
                 {
-                    logger.LogWarning("[UPSERT] Fila con SourceKey={Key} no afectada como se esperaba", row["SourceKey"]);
+                    logger.LogWarning("[UPSERT] Fila con SourceKey={Key} no fue afectada como se esperaba", row["SourceKey"]);
                 }
                 else
                 {

@@ -55,7 +55,7 @@ public class Worker : BackgroundService
             {
                 try
                 {
-                    _logger.LogInformation("ConsolidationEngine heartbeat at {time}", DateTimeOffset.Now);
+                    _logger.LogInformation("ConsolidationEngine ejecutándose en {time}", DateTimeOffset.Now);
                     consolidationOrchestator.RunAll();
                     if (settings.FaultRetryProcessorEnabled)
                     {

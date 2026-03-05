@@ -19,7 +19,7 @@ namespace ConsolidationEngine.Repository
 
         public void Validate()
         {
-            _logger.LogInformation("[SCHEMA VALIDATOR] Iniciando validación de conexiones y esquemas.");
+            _logger.LogInformation("[VALIDADOR DE ESQUEMA] Iniciando validación de conexiones y esquemas.");
 
             var checkedDbs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             int origin = 0;
@@ -42,7 +42,7 @@ namespace ConsolidationEngine.Repository
                 ValidateSchema(dbPair);
             }
 
-            _logger.LogInformation("[SCHEMA VALIDATOR] Validación completada: {origen} DBs origen, {destino} DBs destino.", origin, target);
+            _logger.LogInformation("[VALIDADOR DE ESQUEMA] Validación completada: {origen} BDs origen, {destino} BDs destino.", origin, target);
         }
 
         private void CheckConnection(SqlConnection cnx, string dbName)
@@ -53,11 +53,11 @@ namespace ConsolidationEngine.Repository
                 using var cmd = cnx.CreateCommand();
                 cmd.CommandText = "SELECT 1";
                 cmd.ExecuteScalar();
-                _logger.LogInformation("[SCHEMA VALIDATOR] Conexión exitosa a {Database}", dbName);
+                _logger.LogInformation("[VALIDADOR DE ESQUEMA] Conexión exitosa a {Database}", dbName);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[SCHEMA VALIDATOR ERROR] Conexión fallida a {Database}", dbName);
+                _logger.LogError(ex, "[VALIDADOR DE ESQUEMA ERROR] Conexión fallida a {Database}", dbName);
                 throw new DatabaseConnectionValidatorError($"Error conectando a la base {dbName}", dbName, ex);
             }
             finally
@@ -85,20 +85,20 @@ namespace ConsolidationEngine.Repository
 
                 if (missingColumns.Any())
                 {
-                    _logger.LogWarning("[SCHEMA VALIDATOR] Faltan {count} columnas en {table} en {target}.", missingColumns.Count, table.Name, dbPair.Target);
+                    _logger.LogWarning("[VALIDADOR DE ESQUEMA] Faltan {count} columnas en {table} en {target}.", missingColumns.Count, table.Name, dbPair.Target);
                     foreach (var missing in missingColumns)
                     {
                         AddColumn(targetCnx, table.Name, missing.Value);
-                        _logger.LogInformation("[SCHEMA VALIDATOR] Columna agregada: {table}.{col} ({type})", table.Name, missing.Value.ColumnName, missing.Value.DataType);
+                        _logger.LogInformation("[VALIDADOR DE ESQUEMA] Columna agregada: {table}.{col} ({type})", table.Name, missing.Value.ColumnName, missing.Value.DataType);
                     }
                 }
                 else
                 {
-                    _logger.LogInformation("[SCHEMA VALIDATOR] {table}: schema OK en {target}.", table.Name, dbPair.Target);
+                    _logger.LogInformation("[VALIDADOR DE ESQUEMA] {table}: esquema OK en {target}.", table.Name, dbPair.Target);
                 }
             }
 
-            _logger.LogInformation("[SCHEMA VALIDATOR] Conexión OK y schema OK entre {origin} -> {target}", dbPair.Origin, dbPair.Target);
+            _logger.LogInformation("[VALIDADOR DE ESQUEMA] Conexión OK y esquema OK entre {origin} -> {target}", dbPair.Origin, dbPair.Target);
         }
 
         private Dictionary<string, ColumnDefinition> GetColumns(SqlConnection cnx, string tableName)

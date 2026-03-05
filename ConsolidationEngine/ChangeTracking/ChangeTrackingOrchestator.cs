@@ -46,7 +46,8 @@ namespace ConsolidationEngine.ChangeTracking
                                 skipPrimaryKey: table.SkipPrimaryKey,
                                 batchSize: _settings.BatchSize,
                                 upsertBatchWithFallbackTimeoutSeconds: _settings.UpsertBatchWithFallbackTimeoutSeconds,
-                                logger: _logger
+                                logger: _logger,
+                                rowFilter: table.RowFilter
                             );
 
                             etl.Run();

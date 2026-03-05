@@ -10,6 +10,21 @@ using System.Threading.Tasks;
 
 namespace ConsolidationEngine.FaultRetry
 {
+    /// <summary>
+    /// Procesador de reintentos para errores de consolidación registrados en ConsolidationEngineErrors.
+    /// 
+    /// Estados del campo Retry:
+    /// - 0: Error que NO será reintentado (inicial, permanente, o excedió límite de reintentos)
+    /// - 1: Error marcado para reintento (el FaultRetryProcessor lo procesará)
+    /// - 2: Reintento completado exitosamente
+    /// 
+    /// Flujo de reintentos:
+    /// 1. Los errores se registran con Retry = 0 inicialmente
+    /// 2. Pueden ser marcados manualmente como Retry = 1 para reintento
+    /// 3. Si el reintento es exitoso → Retry = 2
+    /// 4. Si el reintento falla y RetryCount < MaxRetryAttempts → permanece en Retry = 1, incrementa RetryCount
+    /// 5. Si el reintento falla y RetryCount >= MaxRetryAttempts → Retry = 0 (no se reintentará más)
+    /// </summary>
     public class FaultRetryProcessor
     {
         private readonly ConsolidationSettings _settings;
@@ -23,6 +38,7 @@ namespace ConsolidationEngine.FaultRetry
 
         /// <summary>
         /// Ejecuta el proceso de reintentos para todas las bases de datos destino.
+        /// Busca registros con Retry = 1 en ConsolidationEngineErrors y los reintenta.
         /// </summary>
         public async Task RunForAllTargetsAsync()
         {
@@ -30,7 +46,7 @@ namespace ConsolidationEngine.FaultRetry
 
             if (targetDbs.Count == 0)
             {
-                _logger.LogWarning("[FaultRetryProcessor] No target databases found in settings.");
+                _logger.LogWarning("[FaultRetryProcessor] No se encontraron bases de datos destino en la configuración.");
                 return;
             }
 
@@ -38,18 +54,19 @@ namespace ConsolidationEngine.FaultRetry
             {
                 try
                 {
-                    _logger.LogInformation("[FaultRetryProcessor] Checking retries for target DB: {database}", db);
+                    _logger.LogInformation("[FaultRetryProcessor] Verificando reintentos para BD destino: {database}", db);
                     await ProcessRetriesAsync(db);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "[FaultRetryProcessor] Error processing retries for {database}", db);
+                    _logger.LogError(ex, "[FaultRetryProcessor] Error procesando reintentos para {database}", db);
                 }
             }
         }
 
         /// <summary>
         /// Procesa los reintentos para una base de datos específica.
+        /// Selecciona registros con Retry = 1 (pendientes de reintento).
         /// </summary>
         private async Task ProcessRetriesAsync(string database)
         {
@@ -63,11 +80,11 @@ namespace ConsolidationEngine.FaultRetry
 
                 if (errors.Count == 0)
                 {
-                    _logger.LogInformation("[FaultRetryProcessor] No retryable errors in {database}", database);
+                    _logger.LogInformation("[FaultRetryProcessor] No hay errores para reintentar en {database}", database);
                     return;
                 }
 
-                _logger.LogInformation("[FaultRetryProcessor] Found {count} retryable errors in {database}", errors.Count, database);
+                _logger.LogInformation("[FaultRetryProcessor] Se encontraron {count} errores para reintentar en {database}", errors.Count, database);
 
                 foreach (var error in errors)
                 {
@@ -77,18 +94,21 @@ namespace ConsolidationEngine.FaultRetry
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "[FaultRetryProcessor] Error retrying record ID={id} in {database}", error.GetValueOrDefault("Id"), database);
+                        _logger.LogError(ex, "[FaultRetryProcessor] Error reintentando registro ID={id} en {database}", error.GetValueOrDefault("Id"), database);
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[FaultRetryProcessor] General error while processing retries in {database}", database);
+                _logger.LogError(ex, "[FaultRetryProcessor] Error general procesando reintentos en {database}", database);
             }
         }
 
         /// <summary>
-        /// Proceso de reintento
+        /// Proceso de reintento de un registro individual.
+        /// Si el reintento es exitoso, actualiza Retry = 2 (reintento completado).
+        /// Si falla y no ha excedido el límite de reintentos, permanece en Retry = 1 e incrementa RetryCount.
+        /// Si falla y excede el límite, se marca como Retry = 0 (no se reintentará más).
         /// </summary>
         private async Task RetryRecordAsync(Dictionary<string, object> error, string database)
         {
@@ -96,12 +116,28 @@ namespace ConsolidationEngine.FaultRetry
             var sourceKey = error.GetValueOrDefault("SourceKey")?.ToString()?.Trim();
             var tableName = error.GetValueOrDefault("TableName")?.ToString()?.Trim();
             var payloadSql = error.GetValueOrDefault("Payload")?.ToString()?.Trim();
+            var retryCount = error.GetValueOrDefault("RetryCount") != null 
+                ? Convert.ToInt32(error.GetValueOrDefault("RetryCount")) 
+                : 0;
 
-            _logger.LogInformation("[FaultRetryProcessor] Retrying record Id={id} (SourceKey={sourceKey}) in {database}", id, sourceKey, database);
+            _logger.LogInformation("[FaultRetryProcessor] Reintentando registro Id={id} (SourceKey={sourceKey}, RetryCount={retryCount}/{maxRetries}) en {database}", 
+                id, sourceKey, retryCount, _settings.MaxRetryAttempts, database);
 
             if (string.IsNullOrEmpty(payloadSql))
             {
-                _logger.LogWarning("[FaultRetryProcessor] No SQL payload found for ErrorId={id}", id);
+                _logger.LogWarning("[FaultRetryProcessor] No se encontró payload SQL para ErrorId={id}", id);
+                return;
+            }
+
+            // Verificar si ya excedió el límite de reintentos
+            if (retryCount >= _settings.MaxRetryAttempts)
+            {
+                _logger.LogWarning(
+                    "[FaultRetryProcessor] ErrorId={id} (SourceKey={sourceKey}) excedió el límite máximo de reintentos ({retryCount}/{maxRetries}). " +
+                    "Marcando como Retry = 0 (error permanente). Se requiere intervención manual.",
+                    id, sourceKey, retryCount, _settings.MaxRetryAttempts);
+
+                await MarkAsNonRetryableAsync(id, database);
                 return;
             }
 
@@ -120,9 +156,9 @@ namespace ConsolidationEngine.FaultRetry
 
                 var rows = await cmd.ExecuteNonQueryAsync();
 
-                _logger.LogInformation("[FaultRetryProcessor] Retry successful for ErrorId={id} (RowsAffected={rows})", id, rows);
+                _logger.LogInformation("[FaultRetryProcessor] Reintento exitoso para ErrorId={id} (FilasAfectadas={rows})", id, rows);
 
-                // Marcar el registro como reintentado
+                // Marcar el registro como reintentado exitosamente (Retry = 2)
                 var updateRetrySql = @"
                     UPDATE dbo.ConsolidationEngineErrors
                     SET Retry = 2,
@@ -135,10 +171,80 @@ namespace ConsolidationEngine.FaultRetry
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[FaultRetryProcessor] Retry failed for ErrorId={id} in {database}", id, database);
+                _logger.LogError(ex, "[FaultRetryProcessor] Reintento fallido para ErrorId={id} (RetryCount={retryCount}) en {database}", 
+                    id, retryCount, database);
+                
+                // Incrementar el contador de reintentos
+                await IncrementRetryCountAsync(id, database, retryCount);
+                
+                // Si ahora excede el límite, marcar como Retry = 0 (no se reintentará más)
+                if (retryCount + 1 >= _settings.MaxRetryAttempts)
+                {
+                    _logger.LogWarning(
+                        "[FaultRetryProcessor] ErrorId={id} (SourceKey={sourceKey}) alcanzó el límite máximo de reintentos después de este fallo. " +
+                        "Marcando como Retry = 0 (no se reintentará más).",
+                        id, sourceKey);
+                    
+                    await MarkAsNonRetryableAsync(id, database);
+                }
+                // Si no excede el límite, permanece en Retry = 1 para futuros intentos
             }
         }
 
+        /// <summary>
+        /// Incrementa el contador de reintentos sin cambiar el estado Retry.
+        /// </summary>
+        private async Task IncrementRetryCountAsync(object id, string database, int currentRetryCount)
+        {
+            try
+            {
+                using var cnx = SqlConnectionBuilder.Instance.CreateConnection(database);
+                await cnx.OpenAsync();
+
+                var updateSql = @"
+                    UPDATE dbo.ConsolidationEngineErrors
+                    SET RetryCount = RetryCount + 1
+                    WHERE Id = @Id;";
+
+                using var updateCmd = new SqlCommand(updateSql, cnx);
+                updateCmd.Parameters.AddWithValue("@Id", id);
+                await updateCmd.ExecuteNonQueryAsync();
+
+                _logger.LogInformation("[FaultRetryProcessor] RetryCount incrementado a {newCount} para ErrorId={id}", 
+                    currentRetryCount + 1, id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[FaultRetryProcessor] Error al incrementar RetryCount para ErrorId={id}", id);
+            }
+        }
+
+        /// <summary>
+        /// Marca un error como no reintentar más (Retry = 0) cuando excede el límite de reintentos.
+        /// </summary>
+        private async Task MarkAsNonRetryableAsync(object id, string database)
+        {
+            try
+            {
+                using var cnx = SqlConnectionBuilder.Instance.CreateConnection(database);
+                await cnx.OpenAsync();
+
+                var updateSql = @"
+                    UPDATE dbo.ConsolidationEngineErrors
+                    SET Retry = 0
+                    WHERE Id = @Id;";
+
+                using var updateCmd = new SqlCommand(updateSql, cnx);
+                updateCmd.Parameters.AddWithValue("@Id", id);
+                await updateCmd.ExecuteNonQueryAsync();
+
+                _logger.LogWarning("[FaultRetryProcessor] ErrorId={id} marcado como Retry = 0 (no se reintentará más)", id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[FaultRetryProcessor] Error al marcar ErrorId={id} como no reintentar", id);
+            }
+        }
 
         /// <summary>
         /// Extrae la lista única de bases de datos destino desde los settings.

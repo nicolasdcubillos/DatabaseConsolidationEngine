@@ -267,4 +267,5 @@ D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsol
 D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\obj\Release\net9.0\win-x64\ConsolidationEngine.pdb
 D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\obj\Release\net9.0\win-x64\ConsolidationEngine.genruntimeconfig.cache
 D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\obj\Release\net9.0\win-x64\ref\ConsolidationEngine.dll
-D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\bin\Release\net9.0\win-x64\mscordaccore_amd64_amd64_9.0.1225.60609.dll
+D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\bin\Release\net9.0\win-x64\mscordaccore_amd64_amd64_9.0.1326.6317.dll
+D:\NICOLASD\PERSONAL\CC SISTEMAS\OFIMATICA\MARISTAS\Consolidacion\DatabaseConsolidationEngine\ConsolidationEngine\bin\Release\net9.0\win-x64\appsettings.Production.json
